@@ -43,7 +43,7 @@ type AdminUserListItem = {
   nickname: string;
   role: string;
   verification: string;
-  nft_count: number;
+  nft_count: number | null;
   joined_at: string;
   last_login: string;
   status: string;
@@ -121,7 +121,7 @@ type VoteParticipant = {
   email: string;
   wallet: string;
   choice: string;
-  nft_count: number;
+  nft_count: number | null;
   voted_at: string;
 };
 
@@ -480,7 +480,7 @@ function UsersPage() {
                     <td>
                       <span className={`pill ${statusClass(user.verification)}`}>{user.verification}</span>
                     </td>
-                    <td>{user.nft_count}</td>
+                    <td>{user.nft_count ?? "-"}</td>
                     <td>{user.joined_at}</td>
                     <td>{user.last_login}</td>
                     <td>
@@ -635,7 +635,7 @@ function UserDetailPage() {
               <h2>인증/권한 정보</h2>
               <dl className="detail-list">
                 <div><dt>본인인증</dt><dd>{data.verification}</dd></div>
-                <div><dt>보유 NFT</dt><dd>{data.nft_count}개</dd></div>
+                <div><dt>보유 NFT</dt><dd>{data.nft_count == null ? "-" : `${data.nft_count}개`}</dd></div>
                 <div><dt>투표 권한</dt><dd>{data.vote_permission}</dd></div>
                 <div><dt>계정 상태</dt><dd>{data.status}</dd></div>
               </dl>
@@ -1061,7 +1061,7 @@ function VoteDetailPage() {
                         <td>{record.email}</td>
                         <td>{record.wallet}</td>
                         <td><span className={`pill ${statusClass(record.choice)}`}>{record.choice}</span></td>
-                        <td>{record.nft_count}</td>
+                        <td>{record.nft_count ?? "-"}</td>
                         <td>{record.voted_at}</td>
                         <td><NavLink className="table-link" to={`/users/${record.user_id}`}>유저 보기</NavLink></td>
                       </tr>
