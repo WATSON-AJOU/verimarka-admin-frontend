@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Navigate,
   NavLink,
@@ -159,6 +159,8 @@ type AdminVoteDetail = AdminVoteListItem & {
 
 const ACCESS_TOKEN_KEY = "verimarka_admin_access";
 const REFRESH_TOKEN_KEY = "verimarka_admin_refresh";
+const ADMIN_GOOGLE_OAUTH_CODE_KEY = "verimarka:admin:oauth:google:last-code";
+const ADMIN_KAKAO_OAUTH_CODE_KEY = "verimarka:admin:oauth:kakao:last-code";
 
 function getStoredTokens(): AuthTokens | null {
   const access = window.localStorage.getItem(ACCESS_TOKEN_KEY);
@@ -1380,8 +1382,12 @@ function OAuthCallbackPage({
   onAuthenticated: (user: AdminUser, tokens: AuthTokens) => void;
 }) {
   const navigate = useNavigate();
+  const hasStartedRef = useRef(false);
 
   useEffect(() => {
+    if (hasStartedRef.current) return;
+    hasStartedRef.current = true;
+
     let cancelled = false;
 
     const run = async () => {
@@ -1389,6 +1395,13 @@ function OAuthCallbackPage({
         const params = new URLSearchParams(window.location.search);
         const code = params.get("code");
         if (!code) throw new Error(`${provider} authorization code가 없습니다.`);
+        const oauthCodeStorageKey =
+          provider === "Google" ? ADMIN_GOOGLE_OAUTH_CODE_KEY : ADMIN_KAKAO_OAUTH_CODE_KEY;
+        const lastHandledCode = window.sessionStorage.getItem(oauthCodeStorageKey);
+        if (lastHandledCode === code) {
+          return;
+        }
+        window.sessionStorage.setItem(oauthCodeStorageKey, code);
         const redirect_uri = `${window.location.origin}/auth/${provider.toLowerCase()}/callback`;
 
         const response = await fetch(endpoint, {
