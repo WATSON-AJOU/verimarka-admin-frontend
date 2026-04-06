@@ -8,6 +8,9 @@ import {
   useNavigate,
   useParams,
 } from "react-router-dom";
+import appleLogo from "./assets/applelogo.svg";
+import googleLogo from "./assets/googlelogo.svg";
+import kakaoLogo from "./assets/kakaologo.svg";
 
 type AdminUser = {
   id: number;
@@ -25,6 +28,8 @@ type AuthTokens = {
   refresh: string;
 };
 
+const LIST_PAGE_SIZE = 15;
+
 type DashboardData = {
   total_users: number;
   verified_users: number;
@@ -34,7 +39,14 @@ type DashboardData = {
   active_votes: number;
   closing_votes_today: number;
   pending_jobs: number;
-  recent_feed: string[];
+  recent_feed: Array<{
+    date: string;
+    email: string;
+    title: string;
+    result: string;
+    preview_url?: string | null;
+    detail_path?: string;
+  }>;
 };
 
 type AdminUserListItem = {
@@ -53,14 +65,25 @@ type RecentActivity = {
   title: string;
   result: string;
   date: string;
+  preview_url?: string | null;
+  image_public_id?: string | null;
+  detail_path?: string;
+  detail_label?: string;
+  meta?: string;
 };
 
 type AdminUserDetail = AdminUserListItem & {
   recent_ip: string;
+  sms_verification: string;
+  email_verification: string;
   wallet_address: string;
   wallet_method: string;
   wallet_linked_at: string;
   vote_permission: string;
+  activity_page: number;
+  activity_page_size: number;
+  activity_total_count: number;
+  activity_total_pages: number;
   recent_activities: RecentActivity[];
 };
 
@@ -82,6 +105,10 @@ type AdminImageDetail = {
   decision: string;
   preview_url: string | null;
   watermark_preview_url: string | null;
+  comparison_preview_url?: string | null;
+  comparison_label?: string;
+  comparison_file_name?: string;
+  comparison_public_id?: string;
   embedding_similarity: number | null;
   phash_similarity: number | null;
   threshold_result: number | null;
@@ -301,6 +328,61 @@ function formatNumber(value: number | null | undefined) {
   return (value ?? 0).toLocaleString();
 }
 
+function PaginationControls({
+  page,
+  totalPages,
+  totalCount,
+  onPrev,
+  onNext,
+}: {
+  page: number;
+  totalPages: number;
+  totalCount: number;
+  onPrev: () => void;
+  onNext: () => void;
+}) {
+  return (
+    <div className="table-pagination">
+      <span className="subtle-text">전체 {totalCount.toLocaleString()}건</span>
+      <div className="pagination-actions">
+        <button type="button" className="ghost-button" onClick={onPrev} disabled={page <= 1}>
+          이전
+        </button>
+        <span className="subtle-text">
+          {page} / {totalPages}
+        </span>
+        <button type="button" className="ghost-button" onClick={onNext} disabled={page >= totalPages}>
+          다음
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function getGoogleLoginUrl() {
+  const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+  const redirectUri = `${window.location.origin}/auth/google/callback`;
+  return (
+    "https://accounts.google.com/o/oauth2/v2/auth" +
+    "?response_type=code" +
+    `&client_id=${encodeURIComponent(clientId)}` +
+    `&redirect_uri=${encodeURIComponent(redirectUri)}` +
+    "&scope=openid%20email%20profile" +
+    "&access_type=offline"
+  );
+}
+
+function getKakaoLoginUrl() {
+  const clientId = import.meta.env.VITE_KAKAO_CLIENT_ID;
+  const redirectUri = `${window.location.origin}/auth/kakao/callback`;
+  return (
+    "https://kauth.kakao.com/oauth/authorize" +
+    "?response_type=code" +
+    `&client_id=${encodeURIComponent(clientId)}` +
+    `&redirect_uri=${encodeURIComponent(redirectUri)}`
+  );
+}
+
 function GradientThumb({ src, size = "medium" }: { src?: string | null; size?: "small" | "medium" | "large" }) {
   if (!src) {
     return <div className={`gradient-thumb ${size} is-empty`} />;
@@ -383,13 +465,30 @@ function DashboardPage() {
           <article className="admin-card feed-panel">
             <div className="list-head">
               <h2>최근 활동 피드</h2>
-              <NavLink to="/users" className="text-link">
-                유저 관리 보기
-              </NavLink>
             </div>
             <ul className="feed-list">
               {data.recent_feed.map((item) => (
-                <li key={item}>{item}</li>
+                <li key={`${item.date}-${item.email}-${item.title}`}>
+                  <div className="feed-item">
+                    <GradientThumb src={item.preview_url} size="small" />
+                    <div className="feed-item-body">
+                      <div className="feed-item-main">
+                        <span>{item.date}</span>
+                        <span>·</span>
+                        <span>{item.email}</span>
+                        <span>·</span>
+                        <span>{item.title}</span>
+                        <span>·</span>
+                        <span>{item.result}</span>
+                      </div>
+                      {item.detail_path ? (
+                        <NavLink to={item.detail_path} className="text-link">
+                          상세보기
+                        </NavLink>
+                      ) : null}
+                    </div>
+                  </div>
+                </li>
               ))}
             </ul>
           </article>
@@ -403,6 +502,7 @@ function UsersPage() {
   const { data, loading, error } = useAdminResource<AdminUserListItem[]>("/api/accounts/admin/users/");
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState("전체 회원");
+  const [page, setPage] = useState(1);
 
   const filteredUsers = useMemo(() => {
     const source = data ?? [];
@@ -421,6 +521,17 @@ function UsersPage() {
       return matchesQuery && matchesFilter;
     });
   }, [data, filter, query]);
+
+  useEffect(() => {
+    setPage(1);
+  }, [query, filter]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredUsers.length / LIST_PAGE_SIZE));
+  const currentPage = Math.min(page, totalPages);
+  const pagedUsers = useMemo(() => {
+    const start = (currentPage - 1) * LIST_PAGE_SIZE;
+    return filteredUsers.slice(start, start + LIST_PAGE_SIZE);
+  }, [currentPage, filteredUsers]);
 
   return (
     <SectionLayout title="유저 관리">
@@ -452,50 +563,59 @@ function UsersPage() {
         {loading ? <LoadingBlock /> : null}
         {error ? <ErrorBlock message={error} /> : null}
         {!loading && !error ? (
-          <div className="table-wrap">
-            <table className="admin-table">
-              <thead>
-                <tr>
-                  <th>ID</th>
-                  <th>이메일</th>
-                  <th>닉네임</th>
-                  <th>권한</th>
-                  <th>본인인증</th>
-                  <th>NFT</th>
-                  <th>가입일</th>
-                  <th>마지막 로그인</th>
-                  <th>상태</th>
-                  <th>액션</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredUsers.map((user) => (
-                  <tr key={user.id}>
-                    <td>{user.id}</td>
-                    <td>{user.email}</td>
-                    <td>{user.nickname}</td>
-                    <td>
-                      <span className={`pill ${statusClass(user.role)}`}>{user.role}</span>
-                    </td>
-                    <td>
-                      <span className={`pill ${statusClass(user.verification)}`}>{user.verification}</span>
-                    </td>
-                    <td>{user.nft_count ?? "-"}</td>
-                    <td>{user.joined_at}</td>
-                    <td>{user.last_login}</td>
-                    <td>
-                      <span className={`pill ${statusClass(user.status)}`}>{user.status}</span>
-                    </td>
-                    <td>
-                      <NavLink className="table-link" to={`/users/${user.id}`}>
-                        보기
-                      </NavLink>
-                    </td>
+          <>
+            <div className="table-wrap">
+              <table className="admin-table">
+                <thead>
+                  <tr>
+                    <th>ID</th>
+                    <th>이메일</th>
+                    <th>닉네임</th>
+                    <th>권한</th>
+                    <th>SMS인증</th>
+                    <th>NFT</th>
+                    <th>가입일</th>
+                    <th>마지막 로그인</th>
+                    <th>상태</th>
+                    <th>액션</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody>
+                  {pagedUsers.map((user) => (
+                    <tr key={user.id}>
+                      <td>{user.id}</td>
+                      <td>{user.email}</td>
+                      <td>{user.nickname}</td>
+                      <td>
+                        <span className={`pill ${statusClass(user.role)}`}>{user.role}</span>
+                      </td>
+                      <td>
+                        <span className={`pill ${statusClass(user.verification)}`}>{user.verification}</span>
+                      </td>
+                      <td>{user.nft_count ?? "-"}</td>
+                      <td>{user.joined_at}</td>
+                      <td>{user.last_login}</td>
+                      <td>
+                        <span className={`pill ${statusClass(user.status)}`}>{user.status}</span>
+                      </td>
+                      <td>
+                        <NavLink className="table-link" to={`/users/${user.id}`}>
+                          보기
+                        </NavLink>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <PaginationControls
+              page={currentPage}
+              totalPages={totalPages}
+              totalCount={filteredUsers.length}
+              onPrev={() => setPage((current) => Math.max(1, current - 1))}
+              onNext={() => setPage((current) => Math.min(totalPages, current + 1))}
+            />
+          </>
         ) : null}
       </article>
     </SectionLayout>
@@ -504,8 +624,9 @@ function UsersPage() {
 
 function UserDetailPage() {
   const { userId } = useParams();
+  const [activityPage, setActivityPage] = useState(1);
   const { data, loading, error, setData } = useAdminResource<AdminUserDetail>(
-    userId ? `/api/accounts/admin/users/${userId}/` : null,
+    userId ? `/api/accounts/admin/users/${userId}/?page=${activityPage}&page_size=10` : null,
   );
   const [roleValue, setRoleValue] = useState("일반회원");
   const [statusValue, setStatusValue] = useState("정상");
@@ -521,6 +642,10 @@ function UserDetailPage() {
     setSaveError("");
     setSaveMessage("");
   }, [data]);
+
+  useEffect(() => {
+    setActivityPage(1);
+  }, [userId]);
 
   const saveRole = async () => {
     if (!userId || !data || roleValue === data.role) return;
@@ -634,7 +759,8 @@ function UserDetailPage() {
             <article className="detail-card">
               <h2>인증/권한 정보</h2>
               <dl className="detail-list">
-                <div><dt>본인인증</dt><dd>{data.verification}</dd></div>
+                <div><dt>SMS 인증</dt><dd>{data.sms_verification}</dd></div>
+                <div><dt>이메일 인증</dt><dd>{data.email_verification}</dd></div>
                 <div><dt>보유 NFT</dt><dd>{data.nft_count == null ? "-" : `${data.nft_count}개`}</dd></div>
                 <div><dt>투표 권한</dt><dd>{data.vote_permission}</dd></div>
                 <div><dt>계정 상태</dt><dd>{data.status}</dd></div>
@@ -649,29 +775,67 @@ function UserDetailPage() {
                 <div><dt>연결일</dt><dd>{data.wallet_linked_at || "-"}</dd></div>
               </dl>
             </article>
-
-            <article className="detail-card">
-              <h2>최근 활동 로그</h2>
-              <table className="mini-table">
-                <thead>
-                  <tr>
-                    <th>파일명</th>
-                    <th>상태</th>
-                    <th>날짜</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {data.recent_activities.map((activity) => (
-                    <tr key={`${activity.title}-${activity.date}`}>
-                      <td>{activity.title}</td>
-                      <td>{activity.result}</td>
-                      <td>{activity.date}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </article>
           </div>
+
+          <article className="detail-card full-span">
+            <div className="activity-log-head">
+              <h2>최근 활동 로그</h2>
+              <span className="subtle-text">전체 {data.activity_total_count.toLocaleString()}건</span>
+            </div>
+            <table className="mini-table">
+              <thead>
+                <tr>
+                  <th>미리보기</th>
+                  <th>파일명</th>
+                  <th>구분</th>
+                  <th>상태</th>
+                  <th>날짜</th>
+                  <th>액션</th>
+                </tr>
+              </thead>
+              <tbody>
+                {data.recent_activities.map((activity) => (
+                  <tr key={`${activity.title}-${activity.date}-${activity.result}`}>
+                    <td><GradientThumb src={activity.preview_url} size="small" /></td>
+                    <td>{activity.title}</td>
+                    <td>{activity.meta || "-"}</td>
+                    <td>{activity.result}</td>
+                    <td>{activity.date}</td>
+                    <td>
+                      {activity.detail_path ? (
+                        <NavLink className="table-link" to={activity.detail_path}>
+                          {activity.detail_label || "상세보기"}
+                        </NavLink>
+                      ) : (
+                        <span className="subtle-text">-</span>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            <div className="table-pagination">
+              <button
+                type="button"
+                className="ghost-button"
+                onClick={() => setActivityPage((current) => Math.max(1, current - 1))}
+                disabled={loading || data.activity_page <= 1}
+              >
+                이전
+              </button>
+              <span className="subtle-text">
+                {data.activity_page} / {data.activity_total_pages}
+              </span>
+              <button
+                type="button"
+                className="ghost-button"
+                onClick={() => setActivityPage((current) => Math.min(data.activity_total_pages, current + 1))}
+                disabled={loading || data.activity_page >= data.activity_total_pages}
+              >
+                다음
+              </button>
+            </div>
+          </article>
         </article>
       ) : null}
     </SectionLayout>
@@ -683,6 +847,7 @@ function ImagesPage() {
   const [query, setQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("모든 상태");
   const [sortBy, setSortBy] = useState("최신순");
+  const [page, setPage] = useState(1);
 
   const filteredImages = useMemo(() => {
     const source = data ?? [];
@@ -704,6 +869,17 @@ function ImagesPage() {
       return b.uploaded_at.localeCompare(a.uploaded_at);
     });
   }, [data, query, statusFilter, sortBy]);
+
+  useEffect(() => {
+    setPage(1);
+  }, [query, sortBy, statusFilter]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredImages.length / LIST_PAGE_SIZE));
+  const currentPage = Math.min(page, totalPages);
+  const pagedImages = useMemo(() => {
+    const start = (currentPage - 1) * LIST_PAGE_SIZE;
+    return filteredImages.slice(start, start + LIST_PAGE_SIZE);
+  }, [currentPage, filteredImages]);
 
   return (
     <SectionLayout title="이미지 관리">
@@ -739,34 +915,43 @@ function ImagesPage() {
         {loading ? <LoadingBlock /> : null}
         {error ? <ErrorBlock message={error} /> : null}
         {!loading && !error ? (
-          <div className="table-wrap">
-            <table className="admin-table">
-              <thead>
-                <tr>
-                  <th>미리보기</th>
-                  <th>파일명</th>
-                  <th>업로더</th>
-                  <th>업로드일</th>
-                  <th>상태</th>
-                  <th>투표 상태</th>
-                  <th>액션</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredImages.map((image) => (
-                  <tr key={image.public_id}>
-                    <td><GradientThumb src={image.preview_url} size="small" /></td>
-                    <td>{image.file_name}</td>
-                    <td>{image.uploader_email}</td>
-                    <td>{image.uploaded_at}</td>
-                    <td><span className={`pill ${statusClass(image.decision)}`}>{image.decision}</span></td>
-                    <td><span className={`pill ${statusClass(image.vote_status)}`}>{image.vote_status}</span></td>
-                    <td><NavLink className="table-link" to={`/images/${image.public_id}`}>보기</NavLink></td>
+          <>
+            <div className="table-wrap">
+              <table className="admin-table">
+                <thead>
+                  <tr>
+                    <th>미리보기</th>
+                    <th>파일명</th>
+                    <th>업로더</th>
+                    <th>업로드일</th>
+                    <th>상태</th>
+                    <th>투표 상태</th>
+                    <th>액션</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody>
+                  {pagedImages.map((image) => (
+                    <tr key={image.public_id}>
+                      <td><GradientThumb src={image.preview_url} size="small" /></td>
+                      <td>{image.file_name}</td>
+                      <td>{image.uploader_email}</td>
+                      <td>{image.uploaded_at}</td>
+                      <td><span className={`pill ${statusClass(image.decision)}`}>{image.decision}</span></td>
+                      <td><span className={`pill ${statusClass(image.vote_status)}`}>{image.vote_status}</span></td>
+                      <td><NavLink className="table-link" to={`/images/${image.public_id}`}>보기</NavLink></td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <PaginationControls
+              page={currentPage}
+              totalPages={totalPages}
+              totalCount={filteredImages.length}
+              onPrev={() => setPage((current) => Math.max(1, current - 1))}
+              onNext={() => setPage((current) => Math.min(totalPages, current + 1))}
+            />
+          </>
         ) : null}
       </article>
     </SectionLayout>
@@ -805,8 +990,12 @@ function ImageDetailPage() {
                   <GradientThumb src={data.preview_url} size="large" />
                 </div>
                 <div>
-                  <div className="image-label">워터마크 결과</div>
-                  <GradientThumb src={data.watermark_preview_url} size="large" />
+                  <div className="image-label">{data.comparison_label || "비교 이미지"}</div>
+                  {!data.comparison_preview_url && data.decision === "ALLOW" ? (
+                    <div className="image-placeholder-message">워터마크 이미지가 없습니다.</div>
+                  ) : (
+                    <GradientThumb src={data.comparison_preview_url} size="large" />
+                  )}
                 </div>
               </div>
             </article>
@@ -865,6 +1054,7 @@ function VotesPage() {
   const [query, setQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("모든 상태");
   const [sortBy, setSortBy] = useState("최신순");
+  const [page, setPage] = useState(1);
 
   const filteredVotes = useMemo(() => {
     const source = data ?? [];
@@ -887,6 +1077,17 @@ function VotesPage() {
       return b.start_date.localeCompare(a.start_date);
     });
   }, [data, query, sortBy, statusFilter]);
+
+  useEffect(() => {
+    setPage(1);
+  }, [query, sortBy, statusFilter]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredVotes.length / LIST_PAGE_SIZE));
+  const currentPage = Math.min(page, totalPages);
+  const pagedVotes = useMemo(() => {
+    const start = (currentPage - 1) * LIST_PAGE_SIZE;
+    return filteredVotes.slice(start, start + LIST_PAGE_SIZE);
+  }, [currentPage, filteredVotes]);
 
   return (
     <SectionLayout title="투표 관리">
@@ -922,48 +1123,57 @@ function VotesPage() {
         {loading ? <LoadingBlock /> : null}
         {error ? <ErrorBlock message={error} /> : null}
         {!loading && !error ? (
-          <div className="table-wrap">
-            <table className="admin-table">
-              <thead>
-                <tr>
-                  <th>투표ID</th>
-                  <th>이미지</th>
-                  <th>상태</th>
-                  <th>시작일</th>
-                  <th>종료일</th>
-                  <th>찬성%</th>
-                  <th>반대%</th>
-                  <th>참여수</th>
-                  <th>최종 판정</th>
-                  <th>액션</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredVotes.map((vote) => (
-                  <tr key={vote.public_id}>
-                    <td className="strong-cell">{vote.vote_id}</td>
-                    <td>
-                      <div className="image-cell">
-                        <GradientThumb src={vote.preview_url} size="small" />
-                        <div>
-                          <strong>{vote.file_name}</strong>
-                          <span>{vote.uploader_email}</span>
-                        </div>
-                      </div>
-                    </td>
-                    <td><span className={`pill ${statusClass(vote.status)}`}>{vote.status}</span></td>
-                    <td>{vote.start_date}</td>
-                    <td>{vote.end_date}</td>
-                    <td>{vote.yes_rate}%</td>
-                    <td>{vote.no_rate}%</td>
-                    <td>{formatNumber(vote.participant_count)}명</td>
-                    <td><span className={`pill ${statusClass(vote.decision)}`}>{vote.decision}</span></td>
-                    <td><NavLink className="table-link" to={`/votes/${vote.public_id}`}>보기</NavLink></td>
+          <>
+            <div className="table-wrap">
+              <table className="admin-table">
+                <thead>
+                  <tr>
+                    <th>투표ID</th>
+                    <th>이미지</th>
+                    <th>상태</th>
+                    <th>시작일</th>
+                    <th>종료일</th>
+                    <th>찬성%</th>
+                    <th>반대%</th>
+                    <th>참여수</th>
+                    <th>최종 판정</th>
+                    <th>액션</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody>
+                  {pagedVotes.map((vote) => (
+                    <tr key={vote.public_id}>
+                      <td className="strong-cell">{vote.vote_id}</td>
+                      <td>
+                        <div className="image-cell">
+                          <GradientThumb src={vote.preview_url} size="small" />
+                          <div>
+                            <strong>{vote.file_name}</strong>
+                            <span>{vote.uploader_email}</span>
+                          </div>
+                        </div>
+                      </td>
+                      <td><span className={`pill ${statusClass(vote.status)}`}>{vote.status}</span></td>
+                      <td>{vote.start_date}</td>
+                      <td>{vote.end_date}</td>
+                      <td>{vote.yes_rate}%</td>
+                      <td>{vote.no_rate}%</td>
+                      <td>{formatNumber(vote.participant_count)}명</td>
+                      <td><span className={`pill ${statusClass(vote.decision)}`}>{vote.decision}</span></td>
+                      <td><NavLink className="table-link" to={`/votes/${vote.public_id}`}>보기</NavLink></td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <PaginationControls
+              page={currentPage}
+              totalPages={totalPages}
+              totalCount={filteredVotes.length}
+              onPrev={() => setPage((current) => Math.max(1, current - 1))}
+              onNext={() => setPage((current) => Math.min(totalPages, current + 1))}
+            />
+          </>
         ) : null}
       </article>
     </SectionLayout>
@@ -1086,6 +1296,8 @@ function LoginPage({
   onEmailChange,
   onPasswordChange,
   onSubmit,
+  onGoogleLogin,
+  onKakaoLogin,
 }: {
   loading: boolean;
   submitting: boolean;
@@ -1095,28 +1307,33 @@ function LoginPage({
   onEmailChange: (value: string) => void;
   onPasswordChange: (value: string) => void;
   onSubmit: (event: React.FormEvent<HTMLFormElement>) => void;
+  onGoogleLogin: () => void;
+  onKakaoLogin: () => void;
 }) {
   return (
-    <div className="login-shell">
-      <section className="login-hero">
-        <span className="login-badge">VeriMarka Admin</span>
-        <div className="login-hero-copy">
-          <h1>운영자 전용 관리자 포털</h1>
-          <p>admin.verimarka.com에서만 접근하는 별도 관리자 콘솔입니다. 공개 사이트 상단 탭과는 분리된 독립 화면으로 동작합니다.</p>
+    <div className="login-modal-shell">
+      <section className="login-modal-card">
+        <div className="login-modal-head">
+          <h2>VERIMARKA 관리자</h2>
+          <p>로그인</p>
         </div>
-        <div className="login-hero-panel">
-          <strong>접속 도메인</strong>
-          <span>admin.verimarka.com</span>
-        </div>
-      </section>
 
-      <section className="login-panel">
-        <div className="login-panel-head">
-          <div className="eyebrow">Secure Access</div>
-          <h2>관리자 로그인</h2>
-          <p>관리자 권한이 있는 계정으로 로그인한 뒤 콘솔에 진입합니다.</p>
+        <div className="social-login-stack">
+          <button className="social-login-button google" type="button" onClick={onGoogleLogin} disabled={loading || submitting}>
+            <img className="social-login-icon-image" src={googleLogo} alt="" aria-hidden="true" />
+            <span>Google로 계속하기</span>
+          </button>
+          <button className="social-login-button apple" type="button" disabled title="준비중">
+            <img className="social-login-icon-image" src={appleLogo} alt="" aria-hidden="true" />
+            <span>Apple로 계속하기</span>
+          </button>
+          <button className="social-login-button kakao" type="button" onClick={onKakaoLogin} disabled={loading || submitting}>
+            <img className="social-login-icon-image" src={kakaoLogo} alt="" aria-hidden="true" />
+            <span>Kakao로 계속하기</span>
+          </button>
         </div>
-        <form className="login-form" onSubmit={onSubmit}>
+
+        <form className="login-form login-form-card" onSubmit={onSubmit}>
           <label className="login-field">
             <span>이메일</span>
             <input
@@ -1141,12 +1358,86 @@ function LoginPage({
           </label>
           {error ? <div className="login-error">{error}</div> : null}
           <button className="login-submit" type="submit" disabled={loading || submitting}>
-            {submitting ? "로그인 중..." : "관리자 로그인"}
+            {submitting ? "로그인 중..." : "이메일 로그인"}
           </button>
         </form>
+
+        <div className="login-footnote">
+          회원가입을 진행하면 <a href="/terms" target="_blank" rel="noreferrer">이용약관</a> 및 <a href="/privacy" target="_blank" rel="noreferrer">개인정보 처리방침</a>에 동의하게 됩니다.
+        </div>
       </section>
     </div>
   );
+}
+
+function OAuthCallbackPage({
+  provider,
+  endpoint,
+  onAuthenticated,
+}: {
+  provider: "Google" | "Kakao";
+  endpoint: string;
+  onAuthenticated: (user: AdminUser, tokens: AuthTokens) => void;
+}) {
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const run = async () => {
+      try {
+        const params = new URLSearchParams(window.location.search);
+        const code = params.get("code");
+        if (!code) throw new Error(`${provider} authorization code가 없습니다.`);
+        const redirect_uri = `${window.location.origin}/auth/${provider.toLowerCase()}/callback`;
+
+        const response = await fetch(endpoint, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ code, redirect_uri }),
+        });
+        const payload = await response.json().catch(() => ({}));
+        if (!response.ok) {
+          const detail =
+            (payload as { detail?: string; message?: string }).detail ||
+            (payload as { detail?: string; message?: string }).message ||
+            `${provider} 관리자 로그인에 실패했습니다.`;
+          throw new Error(detail);
+        }
+
+        const tokens = {
+          access: String((payload as { access: string }).access),
+          refresh: String((payload as { refresh: string }).refresh),
+        };
+        storeTokens(tokens);
+        const oauthUser = (payload as { user?: AdminUser }).user;
+        if (!oauthUser || (!oauthUser.is_staff && !oauthUser.is_superuser)) {
+          throw new Error("관리자 로그인이 필요합니다.");
+        }
+        if (!cancelled) {
+          onAuthenticated(oauthUser, tokens);
+          window.location.replace("/");
+        }
+      } catch (error) {
+        clearTokens();
+        if (!cancelled) {
+          navigate("/login", {
+            replace: true,
+            state: {
+              loginError: error instanceof Error ? error.message : `${provider} 관리자 로그인에 실패했습니다.`,
+            },
+          });
+        }
+      }
+    };
+
+    void run();
+    return () => {
+      cancelled = true;
+    };
+  }, [endpoint, navigate, onAuthenticated, provider]);
+
+  return <div className="login-loading"><div className="login-loading-card"><div className="eyebrow">OAuth</div><h1>{provider} 관리자 로그인 처리 중입니다.</h1><p>잠시만 기다려주세요.</p></div></div>;
 }
 
 function AdminLayout({ user, onLogout }: { user: AdminUser; onLogout: () => void }) {
@@ -1184,7 +1475,7 @@ function AdminLayout({ user, onLogout }: { user: AdminUser; onLogout: () => void
         <header className="admin-header">
           <div className="header-title">{sectionTitle}</div>
           <div className="header-tools">
-            <a href="https://verimarka.com" target="_blank" rel="noreferrer">사이트 보기</a>
+            <a href="https://verimarka.com" target="_blank" rel="noreferrer">유저 사이트 보기</a>
             <span>{displayName} · {user.email}</span>
             <button type="button" className="header-tool-button danger" onClick={onLogout}>로그아웃</button>
           </div>
@@ -1215,6 +1506,14 @@ export default function App() {
   const [loginEmail, setLoginEmail] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
   const [adminUser, setAdminUser] = useState<AdminUser | null>(null);
+
+  useEffect(() => {
+    const routedError = (location.state as { loginError?: string } | null)?.loginError;
+    if (routedError) {
+      setLoginError(routedError);
+      navigate(location.pathname, { replace: true, state: null });
+    }
+  }, [location.pathname, location.state, navigate]);
 
   useEffect(() => {
     let cancelled = false;
@@ -1256,10 +1555,17 @@ export default function App() {
       navigate("/", { replace: true });
       return;
     }
-    if (!adminUser && location.pathname !== "/login") {
+    const isAuthRoute = location.pathname === "/login" || location.pathname.startsWith("/auth/");
+    if (!adminUser && !isAuthRoute) {
       navigate("/login", { replace: true });
     }
   }, [adminUser, authLoading, authReady, location.pathname, navigate]);
+
+  function handleAdminAuthenticated(user: AdminUser, _tokens: AuthTokens) {
+    setAdminUser(user);
+    setLoginError("");
+    setLoginPassword("");
+  }
 
   async function handleLoginSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -1336,9 +1642,23 @@ export default function App() {
               onEmailChange={setLoginEmail}
               onPasswordChange={setLoginPassword}
               onSubmit={handleLoginSubmit}
+              onGoogleLogin={() => {
+                window.location.href = getGoogleLoginUrl();
+              }}
+              onKakaoLogin={() => {
+                window.location.href = getKakaoLoginUrl();
+              }}
             />
           )
         }
+      />
+      <Route
+        path="/auth/google/callback"
+        element={<OAuthCallbackPage provider="Google" endpoint="/api/accounts/auth/oauth/google/" onAuthenticated={handleAdminAuthenticated} />}
+      />
+      <Route
+        path="/auth/kakao/callback"
+        element={<OAuthCallbackPage provider="Kakao" endpoint="/api/accounts/auth/oauth/kakao/" onAuthenticated={handleAdminAuthenticated} />}
       />
       <Route path="/*" element={adminUser ? <AdminLayout user={adminUser} onLogout={handleLogout} /> : <Navigate to="/login" replace />} />
     </Routes>
