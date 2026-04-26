@@ -5,7 +5,7 @@ import LoginPage from "./components/auth/LoginPage";
 import OAuthCallbackPage from "./components/auth/OAuthCallbackPage";
 import AdminLayout from "./components/layout/AdminLayout";
 import { clearTokens, getGoogleLoginUrl, getKakaoLoginUrl, getStoredTokens, storeTokens } from "./lib/auth";
-import { fetchAdminJson } from "./lib/api";
+import { adminJsonRequest, fetchAdminJson } from "./lib/api";
 import type { AdminUser, AuthTokens } from "./types/admin";
 
 export default function App() {
@@ -85,7 +85,7 @@ export default function App() {
     setLoginSubmitting(true);
 
     try {
-      const response = await fetch("/api/accounts/admin/login/", {
+      const payload = await adminJsonRequest<{ access: string; refresh: string; user: AdminUser }>("/api/accounts/admin/login/", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -93,22 +93,12 @@ export default function App() {
           password: loginPassword,
         }),
       });
-      const payload = await response.json().catch(() => ({}));
-
-      if (!response.ok) {
-        const detail =
-          (payload as { detail?: string; non_field_errors?: string[]; message?: string }).detail ||
-          (payload as { detail?: string; non_field_errors?: string[]; message?: string }).non_field_errors?.[0] ||
-          (payload as { detail?: string; non_field_errors?: string[]; message?: string }).message ||
-          "관리자 로그인에 실패했습니다.";
-        throw new Error(String(detail));
-      }
 
       storeTokens({
-        access: String((payload as { access: string }).access),
-        refresh: String((payload as { refresh: string }).refresh),
+        access: String(payload.access),
+        refresh: String(payload.refresh),
       });
-      setAdminUser((payload as { user: AdminUser }).user);
+      setAdminUser(payload.user);
       setLoginPassword("");
       navigate("/", { replace: true });
     } catch (error) {

@@ -6,6 +6,7 @@ import {
   clearTokens,
   storeTokens,
 } from "../../lib/auth";
+import { adminJsonRequest } from "../../lib/api";
 import type { AdminUser, AuthTokens } from "../../types/admin";
 
 type OAuthCallbackPageProps = {
@@ -37,26 +38,18 @@ export default function OAuthCallbackPage({ provider, endpoint, onAuthenticated 
         window.sessionStorage.setItem(oauthCodeStorageKey, code);
         const redirect_uri = `${window.location.origin}/auth/${provider.toLowerCase()}/callback`;
 
-        const response = await fetch(endpoint, {
+        const payload = await adminJsonRequest<{ access: string; refresh: string; user?: AdminUser }>(endpoint, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ code, redirect_uri }),
         });
-        const payload = await response.json().catch(() => ({}));
-        if (!response.ok) {
-          const detail =
-            (payload as { detail?: string; message?: string }).detail ||
-            (payload as { detail?: string; message?: string }).message ||
-            `${provider} 관리자 로그인에 실패했습니다.`;
-          throw new Error(detail);
-        }
 
         const tokens = {
-          access: String((payload as { access: string }).access),
-          refresh: String((payload as { refresh: string }).refresh),
+          access: String(payload.access),
+          refresh: String(payload.refresh),
         };
         storeTokens(tokens);
-        const oauthUser = (payload as { user?: AdminUser }).user;
+        const oauthUser = payload.user;
         if (!oauthUser || (!oauthUser.is_staff && !oauthUser.is_superuser)) {
           throw new Error("관리자 로그인이 필요합니다.");
         }

@@ -1,4 +1,5 @@
 import type { AuthTokens } from "../types/admin";
+import { appLogger, createClientRequestId } from "./logger";
 
 const ACCESS_TOKEN_KEY = "verimarka_admin_access";
 const REFRESH_TOKEN_KEY = "verimarka_admin_refresh";
@@ -24,13 +25,28 @@ export function clearTokens() {
 }
 
 export async function refreshAdminAccessToken(refresh: string) {
+  const requestId = createClientRequestId();
+  appLogger.info("admin.auth.refresh.request", {
+    request_id: requestId,
+    path: "/api/auth/token/refresh/",
+    method: "POST",
+  });
+
   const response = await fetch("/api/auth/token/refresh/", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", "X-Request-Id": requestId },
     body: JSON.stringify({ refresh }),
   });
 
   const payload = await response.json().catch(() => ({}));
+  appLogger.info("admin.auth.refresh.response", {
+    request_id: response.headers.get("X-Request-Id") || requestId,
+    response_id: response.headers.get("X-Response-Id"),
+    path: "/api/auth/token/refresh/",
+    method: "POST",
+    status: response.status,
+    ok: response.ok,
+  });
   if (!response.ok || !payload.access) {
     throw new Error(payload.detail || "관리자 인증을 갱신할 수 없습니다.");
   }
