@@ -1,16 +1,16 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { NavLink } from "react-router-dom";
 import { PaginationControls, ErrorBlock, GradientThumb, LoadingBlock, SectionLayout } from "../components/common/AdminShared";
+import { StatusPill } from "../components/common/StatusPill";
 import { useAdminResource } from "../hooks/useAdminResource";
-import { statusClass } from "../lib/format";
-import { LIST_PAGE_SIZE, type AdminImageListItem } from "../types/admin";
+import { usePagedList } from "../hooks/usePagedList";
+import type { AdminImageListItem } from "../types/admin";
 
 export default function ImagesPage() {
   const { data, loading, error } = useAdminResource<AdminImageListItem[]>("/api/accounts/admin/images/");
   const [query, setQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("모든 상태");
   const [sortBy, setSortBy] = useState("최신순");
-  const [page, setPage] = useState(1);
 
   const filteredImages = useMemo(() => {
     const source = data ?? [];
@@ -27,16 +27,7 @@ export default function ImagesPage() {
     });
   }, [data, query, statusFilter, sortBy]);
 
-  useEffect(() => {
-    setPage(1);
-  }, [query, sortBy, statusFilter]);
-
-  const totalPages = Math.max(1, Math.ceil(filteredImages.length / LIST_PAGE_SIZE));
-  const currentPage = Math.min(page, totalPages);
-  const pagedImages = useMemo(() => {
-    const start = (currentPage - 1) * LIST_PAGE_SIZE;
-    return filteredImages.slice(start, start + LIST_PAGE_SIZE);
-  }, [currentPage, filteredImages]);
+  const { page, setPage, totalPages, pagedItems } = usePagedList(filteredImages, 15, [query, sortBy, statusFilter]);
 
   return (
     <SectionLayout title="이미지 관리">
@@ -82,14 +73,14 @@ export default function ImagesPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {pagedImages.map((image) => (
+                  {pagedItems.map((image) => (
                     <tr key={image.public_id}>
                       <td><GradientThumb src={image.preview_url} size="small" /></td>
                       <td>{image.file_name}</td>
                       <td>{image.uploader_email}</td>
                       <td>{image.uploaded_at}</td>
-                      <td><span className={`pill ${statusClass(image.decision)}`}>{image.decision}</span></td>
-                      <td><span className={`pill ${statusClass(image.vote_status)}`}>{image.vote_status}</span></td>
+                      <td><StatusPill value={image.decision} /></td>
+                      <td><StatusPill value={image.vote_status} /></td>
                       <td><NavLink className="table-link" to={`/images/${image.public_id}`}>보기</NavLink></td>
                     </tr>
                   ))}
@@ -97,7 +88,7 @@ export default function ImagesPage() {
               </table>
             </div>
             <PaginationControls
-              page={currentPage}
+              page={page}
               totalPages={totalPages}
               totalCount={filteredImages.length}
               onPrev={() => setPage((current) => Math.max(1, current - 1))}

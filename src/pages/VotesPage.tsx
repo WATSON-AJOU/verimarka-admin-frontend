@@ -1,16 +1,17 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { NavLink } from "react-router-dom";
 import { PaginationControls, ErrorBlock, GradientThumb, LoadingBlock, SectionLayout } from "../components/common/AdminShared";
+import { StatusPill } from "../components/common/StatusPill";
 import { useAdminResource } from "../hooks/useAdminResource";
-import { formatNumber, statusClass } from "../lib/format";
-import { LIST_PAGE_SIZE, type AdminVoteListItem } from "../types/admin";
+import { usePagedList } from "../hooks/usePagedList";
+import { formatNumber } from "../lib/format";
+import type { AdminVoteListItem } from "../types/admin";
 
 export default function VotesPage() {
   const { data, loading, error } = useAdminResource<AdminVoteListItem[]>("/api/accounts/admin/votes/");
   const [query, setQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("모든 상태");
   const [sortBy, setSortBy] = useState("최신순");
-  const [page, setPage] = useState(1);
 
   const filteredVotes = useMemo(() => {
     const source = data ?? [];
@@ -31,16 +32,7 @@ export default function VotesPage() {
     });
   }, [data, query, sortBy, statusFilter]);
 
-  useEffect(() => {
-    setPage(1);
-  }, [query, sortBy, statusFilter]);
-
-  const totalPages = Math.max(1, Math.ceil(filteredVotes.length / LIST_PAGE_SIZE));
-  const currentPage = Math.min(page, totalPages);
-  const pagedVotes = useMemo(() => {
-    const start = (currentPage - 1) * LIST_PAGE_SIZE;
-    return filteredVotes.slice(start, start + LIST_PAGE_SIZE);
-  }, [currentPage, filteredVotes]);
+  const { page, setPage, totalPages, pagedItems } = usePagedList(filteredVotes, 15, [query, sortBy, statusFilter]);
 
   return (
     <SectionLayout title="투표 관리">
@@ -89,7 +81,7 @@ export default function VotesPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {pagedVotes.map((vote) => (
+                  {pagedItems.map((vote) => (
                     <tr key={vote.public_id}>
                       <td className="strong-cell">{vote.vote_id}</td>
                       <td>
@@ -101,13 +93,13 @@ export default function VotesPage() {
                           </div>
                         </div>
                       </td>
-                      <td><span className={`pill ${statusClass(vote.status)}`}>{vote.status}</span></td>
+                      <td><StatusPill value={vote.status} /></td>
                       <td>{vote.start_date}</td>
                       <td>{vote.end_date}</td>
                       <td>{vote.yes_rate}%</td>
                       <td>{vote.no_rate}%</td>
                       <td>{formatNumber(vote.participant_count)}명</td>
-                      <td><span className={`pill ${statusClass(vote.decision)}`}>{vote.decision}</span></td>
+                      <td><StatusPill value={vote.decision} /></td>
                       <td><NavLink className="table-link" to={`/votes/${vote.public_id}`}>보기</NavLink></td>
                     </tr>
                   ))}
@@ -115,7 +107,7 @@ export default function VotesPage() {
               </table>
             </div>
             <PaginationControls
-              page={currentPage}
+              page={page}
               totalPages={totalPages}
               totalCount={filteredVotes.length}
               onPrev={() => setPage((current) => Math.max(1, current - 1))}
