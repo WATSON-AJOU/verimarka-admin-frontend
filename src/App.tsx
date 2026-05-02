@@ -4,7 +4,7 @@ import "./styles.css";
 import LoginPage from "./components/auth/LoginPage";
 import OAuthCallbackPage from "./components/auth/OAuthCallbackPage";
 import AdminLayout from "./components/layout/AdminLayout";
-import { clearTokens, getGoogleLoginUrl, getKakaoLoginUrl, getStoredTokens, storeTokens } from "./lib/auth";
+import { clearTokens, getAppleLoginUrl, getGoogleLoginUrl, getKakaoLoginUrl, getStoredTokens, storeTokens } from "./lib/auth";
 import { adminJsonRequest, fetchAdminJson } from "./lib/api";
 import type { AdminUser, AuthTokens } from "./types/admin";
 
@@ -147,12 +147,19 @@ export default function App() {
               onGoogleLogin={() => {
                 window.location.href = getGoogleLoginUrl();
               }}
+              onAppleLogin={() => {
+                window.location.href = getAppleLoginUrl();
+              }}
               onKakaoLogin={() => {
                 window.location.href = getKakaoLoginUrl();
               }}
             />
           )
         }
+      />
+      <Route
+        path="/auth/apple/callback"
+        element={<OAuthCallbackPage provider="Apple" endpoint="/api/accounts/auth/oauth/apple/" onAuthenticated={handleAdminAuthenticated} />}
       />
       <Route
         path="/auth/google/callback"

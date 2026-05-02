@@ -1,6 +1,8 @@
 import { useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import {
+  ADMIN_APPLE_OAUTH_CODE_KEY,
+  ADMIN_APPLE_OAUTH_STATE_KEY,
   ADMIN_GOOGLE_OAUTH_CODE_KEY,
   ADMIN_KAKAO_OAUTH_CODE_KEY,
   clearTokens,
@@ -10,7 +12,7 @@ import { adminJsonRequest } from "../../lib/api";
 import type { AdminUser, AuthTokens } from "../../types/admin";
 
 type OAuthCallbackPageProps = {
-  provider: "Google" | "Kakao";
+  provider: "Apple" | "Google" | "Kakao";
   endpoint: string;
   onAuthenticated: (user: AdminUser, tokens: AuthTokens) => void;
 };
@@ -30,7 +32,20 @@ export default function OAuthCallbackPage({ provider, endpoint, onAuthenticated 
         const params = new URLSearchParams(window.location.search);
         const code = params.get("code");
         if (!code) throw new Error(`${provider} authorization code가 없습니다.`);
-        const oauthCodeStorageKey = provider === "Google" ? ADMIN_GOOGLE_OAUTH_CODE_KEY : ADMIN_KAKAO_OAUTH_CODE_KEY;
+        const oauthCodeStorageKey =
+          provider === "Google"
+            ? ADMIN_GOOGLE_OAUTH_CODE_KEY
+            : provider === "Kakao"
+              ? ADMIN_KAKAO_OAUTH_CODE_KEY
+              : ADMIN_APPLE_OAUTH_CODE_KEY;
+        if (provider === "Apple") {
+          const state = params.get("state");
+          const expectedState = window.sessionStorage.getItem(ADMIN_APPLE_OAUTH_STATE_KEY);
+          if (!state || !expectedState || state !== expectedState) {
+            throw new Error("Apple 로그인 state 검증에 실패했습니다.");
+          }
+          window.sessionStorage.removeItem(ADMIN_APPLE_OAUTH_STATE_KEY);
+        }
         const lastHandledCode = window.sessionStorage.getItem(oauthCodeStorageKey);
         if (lastHandledCode === code) {
           return;

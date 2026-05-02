@@ -6,6 +6,8 @@ const REFRESH_TOKEN_KEY = "verimarka_admin_refresh";
 
 export const ADMIN_GOOGLE_OAUTH_CODE_KEY = "verimarka:admin:oauth:google:last-code";
 export const ADMIN_KAKAO_OAUTH_CODE_KEY = "verimarka:admin:oauth:kakao:last-code";
+export const ADMIN_APPLE_OAUTH_CODE_KEY = "verimarka:admin:oauth:apple:last-code";
+export const ADMIN_APPLE_OAUTH_STATE_KEY = "verimarka:admin:oauth:apple:state";
 
 export function getStoredTokens(): AuthTokens | null {
   const access = window.localStorage.getItem(ACCESS_TOKEN_KEY);
@@ -80,5 +82,21 @@ export function getKakaoLoginUrl() {
     "?response_type=code" +
     `&client_id=${encodeURIComponent(clientId)}` +
     `&redirect_uri=${encodeURIComponent(redirectUri)}`
+  );
+}
+
+export function getAppleLoginUrl() {
+  const clientId = import.meta.env.VITE_APPLE_CLIENT_ID;
+  const redirectUri = `${window.location.origin}/auth/apple/callback`;
+  const state = crypto.randomUUID();
+  window.sessionStorage.setItem(ADMIN_APPLE_OAUTH_STATE_KEY, state);
+  return (
+    "https://appleid.apple.com/auth/authorize" +
+    "?response_type=code" +
+    "&response_mode=query" +
+    `&client_id=${encodeURIComponent(clientId)}` +
+    `&redirect_uri=${encodeURIComponent(redirectUri)}` +
+    "&scope=name%20email" +
+    `&state=${encodeURIComponent(state)}`
   );
 }

@@ -12,6 +12,7 @@ type LoginPageProps = {
   onPasswordChange: (value: string) => void;
   onSubmit: (event: React.FormEvent<HTMLFormElement>) => void;
   onGoogleLogin: () => void;
+  onAppleLogin: () => void;
   onKakaoLogin: () => void;
 };
 
@@ -25,6 +26,7 @@ export default function LoginPage({
   onPasswordChange,
   onSubmit,
   onGoogleLogin,
+  onAppleLogin,
   onKakaoLogin,
 }: LoginPageProps) {
   return (
@@ -40,7 +42,7 @@ export default function LoginPage({
             <img className="social-login-icon-image" src={googleLogo} alt="" aria-hidden="true" />
             <span>Google로 계속하기</span>
           </button>
-          <button className="social-login-button apple" type="button" disabled title="준비중">
+          <button className="social-login-button apple" type="button" onClick={onAppleLogin} disabled={loading || submitting}>
             <img className="social-login-icon-image" src={appleLogo} alt="" aria-hidden="true" />
             <span>Apple로 계속하기</span>
           </button>
