@@ -1,5 +1,53 @@
 # 관리자 페이지
 
+로컬 기본 주소: `http://127.0.0.1:5174/`
+
+## 로컬 실행
+
+### 1. 의존성 설치
+```bash
+cd /Users/emfpdlzj/Desktop/verimarka/verimarka-admin-frontend
+npm install
+```
+
+### 2. 환경변수 확인
+로컬 백엔드를 함께 띄우는 경우 API 주소는 보통 아래 값을 사용합니다.
+
+```bash
+VITE_API_BASE_URL=http://127.0.0.1:8000
+```
+
+필요하면 프로젝트 루트에 `.env.local`을 만들고 값을 넣습니다.
+
+```bash
+VITE_APP_NAME=VeriMarka Admin
+VITE_API_BASE_URL=http://127.0.0.1:8000
+```
+
+### 3. 개발 서버 실행
+사용자 프론트의 기본 포트 `5173`과 충돌하지 않도록 관리자 프론트는 `5174`를 사용합니다.
+
+```bash
+npm run dev -- --host 127.0.0.1 --port 5174
+```
+
+브라우저에서 `http://127.0.0.1:5174/`로 접속합니다.
+
+### 4. 빌드 확인
+```bash
+npm run build
+```
+
+## 백엔드와 같이 실행
+백엔드는 별도 터미널에서 먼저 실행합니다.
+
+```bash
+cd /Users/emfpdlzj/Desktop/verimarka/verimarka-BACKEND
+USE_FAKE_REDIS=1 USE_FAKE_CELERY=1 DJANGO_SETTINGS_MODULE=config.settings.dev .venv/bin/python manage.py runserver 127.0.0.1:8000
+```
+
+관리자 로그인을 하려면 백엔드에서 관리자 계정을 만들어야 합니다.
+
 ## 관리자 계정 만들기
 ```zsh
 cd /Users/emfpdlzj/Desktop/verimarka/verimarka-BACKEND
