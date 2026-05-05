@@ -1,6 +1,6 @@
 # 관리자 페이지
 
-로컬 기본 주소: `http://127.0.0.1:5174/`
+로컬 기본 주소: `http://127.0.0.1:4173/`
 
 ## 로컬 실행
 
@@ -10,43 +10,59 @@ cd /Users/emfpdlzj/Desktop/verimarka/verimarka-admin-frontend
 npm install
 ```
 
-### 2. 환경변수 확인
-로컬 백엔드를 함께 띄우는 경우 API 주소는 보통 아래 값을 사용합니다.
+### 2. 백엔드 실행
+관리자 프론트 개발 서버는 `/api` 요청을 `http://127.0.0.1:8000` 백엔드로 프록시합니다.
+먼저 백엔드를 별도 터미널에서 실행합니다.
 
 ```bash
-VITE_API_BASE_URL=http://127.0.0.1:8000
+cd /Users/emfpdlzj/Desktop/verimarka/verimarka-BACKEND
+source .venv/bin/activate
+USE_FAKE_REDIS=1 USE_FAKE_CELERY=1 DJANGO_SETTINGS_MODULE=config.settings.dev python manage.py runserver 127.0.0.1:8000
 ```
 
-필요하면 프로젝트 루트에 `.env.local`을 만들고 값을 넣습니다.
+관리자 로그인에는 백엔드 관리자 계정이 필요합니다. 계정이 없다면 아래 명령으로 생성합니다.
 
 ```bash
-VITE_APP_NAME=VeriMarka Admin
-VITE_API_BASE_URL=http://127.0.0.1:8000
+cd /Users/emfpdlzj/Desktop/verimarka/verimarka-BACKEND
+DJANGO_SETTINGS_MODULE=config.settings.dev .venv/bin/python manage.py createsuperuser
 ```
 
-### 3. 개발 서버 실행
-사용자 프론트의 기본 포트 `5173`과 충돌하지 않도록 관리자 프론트는 `5174`를 사용합니다.
+### 3. 환경변수 확인
+로컬 API 호출은 Vite proxy를 사용하므로 `VITE_API_BASE_URL`은 필요하지 않습니다.
+OAuth 로그인을 테스트할 때만 프로젝트 루트에 `.env.local`을 만들고 클라이언트 ID를 넣습니다.
 
 ```bash
-npm run dev -- --host 127.0.0.1 --port 5174
+VITE_GOOGLE_CLIENT_ID=your-google-client-id
+VITE_KAKAO_CLIENT_ID=your-kakao-client-id
+VITE_APPLE_CLIENT_ID=your-apple-client-id
 ```
 
-브라우저에서 `http://127.0.0.1:5174/`로 접속합니다.
+### 4. 개발 서버 실행
+사용자 프론트의 기본 포트 `5173`과 충돌하지 않도록 관리자 프론트는 `4173`을 사용합니다.
 
-### 4. 빌드 확인
+```bash
+npm run dev
+```
+
+브라우저에서 `http://127.0.0.1:4173/`로 접속합니다.
+
+포트를 명시해서 실행하려면:
+
+```bash
+npm run dev -- --host 127.0.0.1 --port 4173
+```
+
+### 5. 빌드 확인
 ```bash
 npm run build
 ```
 
 ## 백엔드와 같이 실행
-백엔드는 별도 터미널에서 먼저 실행합니다.
+전체 로컬 실행 주소:
 
-```bash
-cd /Users/emfpdlzj/Desktop/verimarka/verimarka-BACKEND
-USE_FAKE_REDIS=1 USE_FAKE_CELERY=1 DJANGO_SETTINGS_MODULE=config.settings.dev .venv/bin/python manage.py runserver 127.0.0.1:8000
-```
-
-관리자 로그인을 하려면 백엔드에서 관리자 계정을 만들어야 합니다.
+- 백엔드: `http://127.0.0.1:8000/`
+- 사용자 프론트엔드: `http://127.0.0.1:5173/`
+- 관리자 프론트엔드: `http://127.0.0.1:4173/`
 
 ## 관리자 계정 만들기
 ```zsh
