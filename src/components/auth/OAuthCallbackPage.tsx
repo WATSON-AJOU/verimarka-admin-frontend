@@ -52,9 +52,13 @@ export default function OAuthCallbackPage({ provider, endpoint, onAuthenticated 
         }
         window.sessionStorage.setItem(oauthCodeStorageKey, code);
         const redirect_uri =
-          provider === "Apple" && import.meta.env.VITE_APPLE_REDIRECT_URI
-            ? import.meta.env.VITE_APPLE_REDIRECT_URI
-            : `${window.location.origin}/auth/${provider.toLowerCase()}/callback`;
+          provider === "Google" && import.meta.env.VITE_GOOGLE_REDIRECT_URI
+            ? import.meta.env.VITE_GOOGLE_REDIRECT_URI
+            : provider === "Kakao" && import.meta.env.VITE_KAKAO_REDIRECT_URI
+              ? import.meta.env.VITE_KAKAO_REDIRECT_URI
+              : provider === "Apple" && import.meta.env.VITE_APPLE_REDIRECT_URI
+                ? import.meta.env.VITE_APPLE_REDIRECT_URI
+                : `${window.location.origin}/auth/${provider.toLowerCase()}/callback`;
 
         const payload = await adminJsonRequest<{ access: string; refresh: string; user?: AdminUser }>(endpoint, {
           method: "POST",

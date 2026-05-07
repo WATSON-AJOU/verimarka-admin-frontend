@@ -63,7 +63,9 @@ export async function refreshAdminAccessToken(refresh: string) {
 
 export function getGoogleLoginUrl() {
   const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
-  const redirectUri = `${window.location.origin}/auth/google/callback`;
+  const redirectUri =
+    import.meta.env.VITE_GOOGLE_REDIRECT_URI ||
+    `${window.location.origin}/auth/google/callback`;
   return (
     "https://accounts.google.com/o/oauth2/v2/auth" +
     "?response_type=code" +
@@ -76,7 +78,9 @@ export function getGoogleLoginUrl() {
 
 export function getKakaoLoginUrl() {
   const clientId = import.meta.env.VITE_KAKAO_CLIENT_ID;
-  const redirectUri = `${window.location.origin}/auth/kakao/callback`;
+  const redirectUri =
+    import.meta.env.VITE_KAKAO_REDIRECT_URI ||
+    `${window.location.origin}/auth/kakao/callback`;
   return (
     "https://kauth.kakao.com/oauth/authorize" +
     "?response_type=code" +
