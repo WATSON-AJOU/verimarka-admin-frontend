@@ -1,119 +1,77 @@
-# 관리자 페이지
+# Verimarka Admin Frontend
 
-로컬 기본 주소: `http://127.0.0.1:4173/`
+사용자, 저작물 등록/검증 기록, 운영 오류를 관리하기 위한 Verimarka 관리자 React 프론트엔드입니다.
 
-## 로컬 실행
+기존 개발/운영 인수인계 문서는 [HANDOFF.md](./HANDOFF.md)에 보존했습니다.
 
-### 1. 의존성 설치
-```bash
-cd /Users/emfpdlzj/Desktop/verimarka/verimarka-admin-frontend
-npm install
+## 1. 프로젝트 한 줄 소개
+
+Verimarka는 AI 생성 이미지의 저작권 등록 가능성을 분석하고, 워터마크와 NFT 발급을 통해 저작물의 소유 및 검증 기록을 남기는 서비스입니다.
+
+## 2. 개발 배경
+
+AI 저작물 등록 서비스는 사용자 화면뿐 아니라 운영자가 인증, 등록 기록, 투표 상태, 오류 로그를 확인할 수 있는 별도 관리 화면이 필요합니다. 관리자 프론트엔드는 운영 중 발생하는 사용자/콘텐츠 상태를 빠르게 파악하고, 이후 권한 관리와 감사 로그 기능을 확장할 수 있는 기반으로 구축했습니다.
+
+## 3. 주요 기능
+
+- 관리자 로그인 화면 및 인증 흐름
+- 관리자 페이지 기본 레이아웃
+- 사용자 관리 화면 기반
+- 등록/분석 기록 관리 화면 기반
+- 저작물 등록 및 검증 상태 확인 화면 기반
+- 운영 오류 로그 확인 기반
+- 사용자 프론트와 분리된 `admin.verimarka.com` 배포 구조
+- 관리자 프론트 전용 GitHub Actions 자동 배포
+- 관리자 정적 파일 배포, 헬스체크, 실패 시 복원 전략
+
+## 전체구조 및 백엔드 구조
+
+![](./image/backend.png)
+
+![](./image/system-architect.png)
+
+
+## 4. 기술 스택
+
+- Frontend: React 19, TypeScript, Vite
+- Routing: React Router
+- API: Django REST API 연동
+- Build/Deploy: TypeScript build, Vite build, GitHub Actions, rsync, Nginx
+- Infra: `admin.verimarka.com`, Let's Encrypt, Docker/Nginx 운영 환경
+
+## 5. 시스템 아키텍처 그림
+
+```mermaid
+flowchart LR
+    OP["Admin User"] --> ADM["React Admin Frontend"]
+    ADM --> N["Nginx / admin.verimarka.com"]
+    N --> API["Django REST API"]
+    API --> DB[("PostgreSQL / RDS")]
+    API --> LOG["Error Logs / Request Logs"]
+    API --> C["Content / Analysis Records"]
+    API --> U["User / Auth Records"]
+    API --> OBS["Sentry / Slack"]
 ```
 
-### 2. 백엔드 실행
-관리자 프론트 개발 서버는 `/api` 요청을 `http://127.0.0.1:8000` 백엔드로 프록시합니다.
-먼저 백엔드를 별도 터미널에서 실행합니다.
+## 6. 역할 분담
+- 박준서: AI 담당
+- 박민정: 웹 풀스택 담당
+- 임윤수: 블록체인 담당
 
-```bash
-cd /Users/emfpdlzj/Desktop/verimarka/verimarka-BACKEND
-source .venv/bin/activate
-USE_FAKE_REDIS=1 USE_FAKE_CELERY=1 DJANGO_SETTINGS_MODULE=config.settings.dev python manage.py runserver 127.0.0.1:8000
-```
+## 7. 기술적으로 고민한 점
 
-관리자 로그인에는 백엔드 관리자 계정이 필요합니다. 계정이 없다면 아래 명령으로 생성합니다.
+- 사용자 서비스와 관리자 서비스를 분리해 배포하면서도 같은 백엔드 API를 안정적으로 바라보도록 Vite proxy와 운영 Nginx 경로를 정리했습니다.
+- 관리자 프론트는 운영 도구이므로 화려한 화면보다 기록 조회, 상태 확인, 장애 대응에 필요한 정보 구조를 우선했습니다.
+- 운영 배포에서 `dist` 동기화, Nginx reload, 헬스체크 중 하나라도 실패하면 이전 빌드로 되돌릴 수 있도록 복원 전략을 검토했습니다.
+- `admin.verimarka.com`은 공개 도메인이므로 추후 Cloudflare 또는 Nginx 기반 IP 제한, 관리자 권한 분리, 관리자 활동 로그 저장이 필요하도록 정리했습니다.
 
-```bash
-cd /Users/emfpdlzj/Desktop/verimarka/verimarka-BACKEND
-DJANGO_SETTINGS_MODULE=config.settings.dev .venv/bin/python manage.py createsuperuser
-```
+## 8. 트러블슈팅 / 성과
 
-### 3. 환경변수 확인
-로컬 API 호출은 Vite proxy를 사용하므로 `VITE_API_BASE_URL`은 필요하지 않습니다.
-OAuth 로그인을 테스트할 때만 프로젝트 루트에 `.env.local`을 만들고 클라이언트 ID를 넣습니다.
+- 사용자 프론트와 포트가 충돌하지 않도록 관리자 개발 서버 포트를 `4173`으로 분리했습니다.
+- 운영 compose의 Nginx 정적 파일 경로와 관리자 프론트 배포 경로를 맞춰 `admin.verimarka.com` 뼈대를 구성했습니다.
+- 관리자 프론트 배포 실패 시 직전 `dist` 백업본으로 복원하는 흐름을 정리해 운영 배포 리스크를 줄였습니다.
+- 관리자 오류 로그 기반을 추가해 운영 중 사용자 이슈를 추적할 수 있는 출발점을 만들었습니다.
 
-```bash
-VITE_GOOGLE_CLIENT_ID=your-google-client-id
-VITE_KAKAO_CLIENT_ID=your-kakao-client-id
-VITE_APPLE_CLIENT_ID=your-apple-client-id
-```
+## 9. 실행 방법
 
-### 4. 개발 서버 실행
-사용자 프론트의 기본 포트 `5173`과 충돌하지 않도록 관리자 프론트는 `4173`을 사용합니다.
-
-```bash
-npm run dev
-```
-
-브라우저에서 `http://127.0.0.1:4173/`로 접속합니다.
-
-포트를 명시해서 실행하려면:
-
-```bash
-npm run dev -- --host 127.0.0.1 --port 4173
-```
-
-### 5. 빌드 확인
-```bash
-npm run build
-```
-
-## 백엔드와 같이 실행
-전체 로컬 실행 주소:
-
-- 백엔드: `http://127.0.0.1:8000/`
-- 사용자 프론트엔드: `http://127.0.0.1:5173/`
-- 관리자 프론트엔드: `http://127.0.0.1:4173/`
-
-## 관리자 계정 만들기
-```zsh
-cd /Users/emfpdlzj/Desktop/verimarka/verimarka-BACKEND
-python manage.py createsuperuser --settings=config.settings.dev
-
--- 운영
-docker compose -f docker-compose.prod.yml exec verimarka-api python manage.py createsuperuser --settings=config.settings.prod
-
-```
-
-## CI/CD
-GitHub Actions 워크플로는 `main` 브랜치 push 또는 수동 실행 시 관리자 프론트를 빌드한 뒤, 서버의 관리자 정적 경로로 `dist` 를 동기화합니다.
-
-워크플로 파일:
-`/.github/workflows/deploy-admin-frontend.yml`
-
-필수 GitHub Secrets:
-- `VITE_API_BASE_URL`
-- `VITE_APP_NAME`
-- `VITE_GOOGLE_REDIRECT_URI`
-- `VITE_WALLETCONNECT_PROJECT_ID`
-- `VITE_GOOGLE_CLIENT_ID`
-- `VITE_KAKAO_CLIENT_ID`
-- `ADMIN_FRONTEND_DEPLOY_HOST`
-- `ADMIN_FRONTEND_DEPLOY_PORT`
-- `ADMIN_FRONTEND_DEPLOY_USER`
-- `ADMIN_FRONTEND_DEPLOY_SSH_KEY`
-- `ADMIN_FRONTEND_DEPLOY_PATH`
-
-선택 GitHub Secret:
-- `ADMIN_FRONTEND_RELOAD_COMMAND`
-- `ADMIN_FRONTEND_HEALTHCHECK_URL`
-- `ADMIN_FRONTEND_HEALTHCHECK_RETRIES`
-- `ADMIN_FRONTEND_HEALTHCHECK_INTERVAL_SECONDS`
-
-권장 운영값:
-- `ADMIN_FRONTEND_DEPLOY_PATH`: nginx가 바라보는 관리자 정적 경로
-  `/usr/share/nginx/admin` 를 직접 쓰는 구조가 아니라면, 실제 서버에서 bind mount 원본인 `../verimarka-admin-frontend/dist` 경로를 넣어야 합니다.
-- `ADMIN_FRONTEND_RELOAD_COMMAND`:
-  ```zsh
-  cd /opt/verimarka/verimarka-BACKEND && docker compose -f docker-compose.prod.yml exec -T verimarka-nginx nginx -s reload
-  ```
-- `ADMIN_FRONTEND_HEALTHCHECK_URL`: 배포 직후 관리자 프론트 확인용 URL
-  예: `https://admin.verimarka.com/health/`
-- `ADMIN_FRONTEND_HEALTHCHECK_RETRIES`: 헬스체크 재시도 횟수
-- `ADMIN_FRONTEND_HEALTHCHECK_INTERVAL_SECONDS`: 헬스체크 재시도 간격(초)
-
-현재 운영 compose 기준으로 nginx는 관리자 프론트를 아래 경로에서 읽습니다.
-`../verimarka-admin-frontend/dist:/usr/share/nginx/admin:ro`
-
-배포 중 `rsync`, nginx reload, `ADMIN_FRONTEND_HEALTHCHECK_URL` 검증 중 하나라도 실패하면 직전 `dist` 백업본으로 자동 복원합니다.
-
-기본 헬스 엔드포인트는 `GET /health/` 입니다.
+실행 방법은 [docs/SETUP.md](./docs/SETUP.md)를 참고하세요.
