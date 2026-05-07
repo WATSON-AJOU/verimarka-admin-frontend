@@ -51,7 +51,10 @@ export default function OAuthCallbackPage({ provider, endpoint, onAuthenticated 
           return;
         }
         window.sessionStorage.setItem(oauthCodeStorageKey, code);
-        const redirect_uri = `${window.location.origin}/auth/${provider.toLowerCase()}/callback`;
+        const redirect_uri =
+          provider === "Apple" && import.meta.env.VITE_APPLE_REDIRECT_URI
+            ? import.meta.env.VITE_APPLE_REDIRECT_URI
+            : `${window.location.origin}/auth/${provider.toLowerCase()}/callback`;
 
         const payload = await adminJsonRequest<{ access: string; refresh: string; user?: AdminUser }>(endpoint, {
           method: "POST",

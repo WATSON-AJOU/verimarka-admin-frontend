@@ -87,7 +87,12 @@ export function getKakaoLoginUrl() {
 
 export function getAppleLoginUrl() {
   const clientId = import.meta.env.VITE_APPLE_CLIENT_ID;
-  const redirectUri = `${window.location.origin}/auth/apple/callback`;
+  if (!clientId) {
+    throw new Error("Apple 로그인 설정이 누락되었습니다.");
+  }
+  const redirectUri =
+    import.meta.env.VITE_APPLE_REDIRECT_URI ||
+    `${window.location.origin}/auth/apple/callback`;
   const state = crypto.randomUUID();
   window.sessionStorage.setItem(ADMIN_APPLE_OAUTH_STATE_KEY, state);
   return (
