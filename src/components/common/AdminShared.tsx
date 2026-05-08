@@ -39,6 +39,26 @@ export function GradientThumb({ src, size = "medium" }: { src?: string | null; s
   return <img className={`gradient-thumb ${size} is-image`} src={src} alt="" />;
 }
 
+export function ContentThumb({
+  src,
+  contentType,
+  size = "medium",
+}: {
+  src?: string | null;
+  contentType?: "image" | "document";
+  size?: "small" | "medium" | "large";
+}) {
+  if (contentType !== "document") {
+    return <GradientThumb src={src} size={size} />;
+  }
+
+  return (
+    <div className={`gradient-thumb ${size} is-empty content-thumb-document`}>
+      <span>DOC</span>
+    </div>
+  );
+}
+
 export function LoadingBlock() {
   return (
     <article className="admin-card loading-block">

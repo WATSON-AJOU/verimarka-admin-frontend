@@ -1,5 +1,5 @@
 import { NavLink, useParams } from "react-router-dom";
-import { ErrorBlock, GradientThumb, LoadingBlock, SectionLayout } from "../components/common/AdminShared";
+import { ContentThumb, ErrorBlock, LoadingBlock, SectionLayout } from "../components/common/AdminShared";
 import { useAdminResource } from "../hooks/useAdminResource";
 import { formatNumber, statusClass } from "../lib/format";
 import type { AdminVoteDetail } from "../types/admin";
@@ -29,13 +29,25 @@ export default function VoteDetailPage() {
 
           <div className="detail-grid wide">
             <article className="detail-card">
-              <h2>이미지 정보</h2>
-              <div className="vote-detail-image">
-                <GradientThumb src={data.preview_url} size="large" />
+              <h2>저작물 정보</h2>
+              <div className="vote-detail-image vote-detail-image-stack">
+                <div className="vote-compare-grid">
+                  <div>
+                    <div className="image-label">투표 대상</div>
+                    <ContentThumb src={data.original_preview_url || data.preview_url} contentType={data.content_type} size="large" />
+                  </div>
+                  <div>
+                    <div className="image-label">{data.comparison_label || "유사 후보"}</div>
+                    <ContentThumb src={data.comparison_preview_url} contentType={data.content_type} size="large" />
+                  </div>
+                </div>
                 <dl className="detail-list compact">
                   <div><dt>파일명</dt><dd>{data.file_name}</dd></div>
-                  <div><dt>이미지 ID</dt><dd>{data.image_id}</dd></div>
+                  <div><dt>저작물 ID</dt><dd>{data.image_id}</dd></div>
                   <div><dt>업로더</dt><dd>{data.uploader_email}</dd></div>
+                  <div><dt>비교 파일</dt><dd>{data.comparison_file_name || "-"}</dd></div>
+                  <div><dt>Embedding 유사도</dt><dd>{data.embedding_similarity ?? "-"}%</dd></div>
+                  <div><dt>Threshold</dt><dd>{data.threshold_result ?? "-"}%</dd></div>
                   <div><dt>찬성 비율</dt><dd>{data.yes_rate}%</dd></div>
                 </dl>
               </div>

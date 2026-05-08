@@ -82,6 +82,7 @@ export type AdminUserDetail = AdminUserListItem & {
 
 export type AdminImageListItem = {
   public_id: string;
+  content_type: "image" | "document";
   file_name: string;
   uploader_email: string;
   uploaded_at: string;
@@ -92,6 +93,7 @@ export type AdminImageListItem = {
 
 export type AdminImageDetail = {
   public_id: string;
+  content_type: "image" | "document";
   file_name: string;
   uploader_email: string;
   uploaded_at: string;
@@ -123,6 +125,7 @@ export type AdminImageDetail = {
 
 export type AdminVoteListItem = {
   public_id: string;
+  content_type: "image" | "document";
   vote_id: string;
   file_name: string;
   uploader_email: string;
@@ -147,5 +150,12 @@ export type VoteParticipant = {
 
 export type AdminVoteDetail = AdminVoteListItem & {
   image_id: string;
+  original_preview_url?: string | null;
+  comparison_preview_url?: string | null;
+  comparison_label?: string;
+  comparison_file_name?: string;
+  comparison_public_id?: string;
+  embedding_similarity?: number | null;
+  threshold_result?: number | null;
   voter_records: VoteParticipant[];
 };

@@ -1,5 +1,5 @@
 import { NavLink, useParams } from "react-router-dom";
-import { ErrorBlock, GradientThumb, LoadingBlock, SectionLayout } from "../components/common/AdminShared";
+import { ContentThumb, ErrorBlock, LoadingBlock, SectionLayout } from "../components/common/AdminShared";
 import { useAdminResource } from "../hooks/useAdminResource";
 import { statusClass } from "../lib/format";
 import type { AdminImageDetail } from "../types/admin";
@@ -11,14 +11,14 @@ export default function ImageDetailPage() {
   );
 
   return (
-    <SectionLayout title="이미지 상세">
+    <SectionLayout title="저작물 상세">
       {loading ? <LoadingBlock /> : null}
       {error ? <ErrorBlock message={error} /> : null}
       {data ? (
         <article className="admin-card detail-shell">
           <div className="page-head with-action">
             <div>
-              <h1>이미지 상세</h1>
+              <h1>저작물 상세</h1>
               <div className="hero-name">{data.file_name}</div>
             </div>
             <div className="page-head-actions">
@@ -29,18 +29,18 @@ export default function ImageDetailPage() {
 
           <div className="detail-grid wide">
             <article className="detail-card">
-              <h2>이미지 정보</h2>
+              <h2>저작물 정보</h2>
               <div className="image-compare-grid">
                 <div>
                   <div className="image-label">원본</div>
-                  <GradientThumb src={data.preview_url} size="large" />
+                  <ContentThumb src={data.preview_url} contentType={data.content_type} size="large" />
                 </div>
                 <div>
-                  <div className="image-label">{data.comparison_label || "비교 이미지"}</div>
+                  <div className="image-label">{data.comparison_label || "비교 저작물"}</div>
                   {!data.comparison_preview_url && data.decision === "ALLOW" ? (
-                    <div className="image-placeholder-message">워터마크 이미지가 없습니다.</div>
+                    <div className="image-placeholder-message">워터마크 파일이 없습니다.</div>
                   ) : (
-                    <GradientThumb src={data.comparison_preview_url} size="large" />
+                    <ContentThumb src={data.comparison_preview_url} contentType={data.content_type} size="large" />
                   )}
                 </div>
               </div>

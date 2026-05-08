@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { NavLink } from "react-router-dom";
-import { PaginationControls, ErrorBlock, GradientThumb, LoadingBlock, SectionLayout } from "../components/common/AdminShared";
+import { PaginationControls, ContentThumb, ErrorBlock, LoadingBlock, SectionLayout } from "../components/common/AdminShared";
 import { StatusPill } from "../components/common/StatusPill";
 import { useAdminResource } from "../hooks/useAdminResource";
 import { LIST_PAGE_SIZE, type AdminImageListItem, type PaginatedResponse } from "../types/admin";
@@ -41,10 +41,10 @@ export default function ImagesPage() {
   }
 
   return (
-    <SectionLayout title="이미지 관리">
+    <SectionLayout title="저작물 관리">
       <article className="admin-card">
         <div className="page-head">
-          <h1>이미지 관리</h1>
+          <h1>저작물 관리</h1>
         </div>
         <div className="filter-stack">
           <div className="search-row">
@@ -86,7 +86,7 @@ export default function ImagesPage() {
                 <tbody>
                   {images.map((image) => (
                     <tr key={image.public_id}>
-                      <td><GradientThumb src={image.preview_url} size="small" /></td>
+                      <td><ContentThumb src={image.preview_url} contentType={image.content_type} size="small" /></td>
                       <td>{image.file_name}</td>
                       <td>{image.uploader_email}</td>
                       <td>{image.uploaded_at}</td>

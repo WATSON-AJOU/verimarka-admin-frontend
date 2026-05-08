@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { NavLink } from "react-router-dom";
-import { PaginationControls, ErrorBlock, GradientThumb, LoadingBlock, SectionLayout } from "../components/common/AdminShared";
+import { PaginationControls, ContentThumb, ErrorBlock, LoadingBlock, SectionLayout } from "../components/common/AdminShared";
 import { StatusPill } from "../components/common/StatusPill";
 import { useAdminResource } from "../hooks/useAdminResource";
 import { formatNumber } from "../lib/format";
@@ -76,7 +76,7 @@ export default function VotesPage() {
                 <thead>
                   <tr>
                     <th>투표ID</th>
-                    <th>이미지</th>
+                    <th>저작물</th>
                     <th>상태</th>
                     <th>시작일</th>
                     <th>종료일</th>
@@ -93,7 +93,7 @@ export default function VotesPage() {
                       <td className="strong-cell">{vote.vote_id}</td>
                       <td>
                         <div className="image-cell">
-                          <GradientThumb src={vote.preview_url} size="small" />
+                          <ContentThumb src={vote.preview_url} contentType={vote.content_type} size="small" />
                           <div>
                             <strong>{vote.file_name}</strong>
                             <span>{vote.uploader_email}</span>
