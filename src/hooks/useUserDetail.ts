@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useAdminResource } from "./useAdminResource";
 import { mutateAdminJson } from "../lib/api";
+import { normalizePositiveIntParam } from "../lib/routeParams";
 import type { AdminUserDetail } from "../types/admin";
 
 export function useUserDetail(userId: string | undefined) {
@@ -11,8 +12,9 @@ export function useUserDetail(userId: string | undefined) {
   const [saveMessage, setSaveMessage] = useState("");
   const [savingRole, setSavingRole] = useState(false);
   const [savingStatus, setSavingStatus] = useState(false);
+  const safeUserId = normalizePositiveIntParam(userId);
   const resource = useAdminResource<AdminUserDetail>(
-    userId ? `/api/accounts/admin/users/${userId}/?page=${activityPage}&page_size=10` : null,
+    safeUserId ? `/api/accounts/admin/users/${safeUserId}/?page=${activityPage}&page_size=10` : null,
   );
 
   useEffect(() => {
@@ -26,10 +28,10 @@ export function useUserDetail(userId: string | undefined) {
 
   useEffect(() => {
     setActivityPage(1);
-  }, [userId]);
+  }, [safeUserId]);
 
   async function saveField(field: "role" | "status", value: string, successMessage: string) {
-    if (!userId || !resource.data || value === resource.data[field]) return;
+    if (!safeUserId || !resource.data || value === resource.data[field]) return;
 
     const setSaving = field === "role" ? setSavingRole : setSavingStatus;
     setSaving(true);
@@ -37,7 +39,7 @@ export function useUserDetail(userId: string | undefined) {
     setSaveMessage("");
 
     try {
-      const next = await mutateAdminJson<AdminUserDetail>(`/api/accounts/admin/users/${userId}/`, {
+      const next = await mutateAdminJson<AdminUserDetail>(`/api/accounts/admin/users/${safeUserId}/`, {
         method: "PATCH",
         body: JSON.stringify({ [field]: value }),
       });

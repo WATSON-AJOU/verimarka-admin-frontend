@@ -2,12 +2,14 @@ import { NavLink, useParams } from "react-router-dom";
 import { ContentThumb, ErrorBlock, LoadingBlock, SectionLayout } from "../components/common/AdminShared";
 import { useAdminResource } from "../hooks/useAdminResource";
 import { statusClass } from "../lib/format";
+import { normalizeUuidParam } from "../lib/routeParams";
 import type { AdminImageDetail } from "../types/admin";
 
 export default function ImageDetailPage() {
   const { imageId } = useParams();
+  const safeImageId = normalizeUuidParam(imageId);
   const { data, loading, error } = useAdminResource<AdminImageDetail>(
-    imageId ? `/api/accounts/admin/images/${imageId}/` : null,
+    safeImageId ? `/api/accounts/admin/images/${safeImageId}/` : null,
   );
 
   return (

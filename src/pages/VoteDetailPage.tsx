@@ -2,12 +2,14 @@ import { NavLink, useParams } from "react-router-dom";
 import { ContentThumb, ErrorBlock, LoadingBlock, SectionLayout } from "../components/common/AdminShared";
 import { useAdminResource } from "../hooks/useAdminResource";
 import { formatNumber, statusClass } from "../lib/format";
+import { normalizeUuidParam } from "../lib/routeParams";
 import type { AdminVoteDetail } from "../types/admin";
 
 export default function VoteDetailPage() {
   const { voteId } = useParams();
+  const safeVoteId = normalizeUuidParam(voteId);
   const { data, loading, error } = useAdminResource<AdminVoteDetail>(
-    voteId ? `/api/accounts/admin/votes/${voteId}/` : null,
+    safeVoteId ? `/api/accounts/admin/votes/${safeVoteId}/` : null,
   );
 
   return (
