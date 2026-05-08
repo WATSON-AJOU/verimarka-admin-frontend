@@ -4,6 +4,7 @@ import "./styles.css";
 import LoginPage from "./components/auth/LoginPage";
 import OAuthCallbackPage from "./components/auth/OAuthCallbackPage";
 import AdminLayout from "./components/layout/AdminLayout";
+import ErrorPage from "./pages/ErrorPage";
 import {
   clearTokens,
   getAppleLoginUrl,
@@ -75,7 +76,8 @@ export default function App() {
       return;
     }
     const isAuthRoute = location.pathname === "/login" || location.pathname.startsWith("/auth/");
-    if (!adminUser && !isAuthRoute) {
+    const isPublicErrorRoute = location.pathname === "/403" || location.pathname === "/404";
+    if (!adminUser && !isAuthRoute && !isPublicErrorRoute) {
       navigate("/login", { replace: true });
     }
   }, [adminUser, authLoading, authReady, location.pathname, navigate]);
@@ -177,6 +179,8 @@ export default function App() {
         path="/auth/kakao/callback"
         element={<OAuthCallbackPage provider="Kakao" endpoint="/api/accounts/admin/auth/oauth/kakao/" onAuthenticated={handleAdminAuthenticated} />}
       />
+      <Route path="/403" element={<ErrorPage statusCode={403} />} />
+      <Route path="/404" element={<ErrorPage statusCode={404} />} />
       <Route path="/*" element={adminUser ? <AdminLayout user={adminUser} onLogout={handleLogout} /> : <Navigate to="/login" replace />} />
     </Routes>
   );

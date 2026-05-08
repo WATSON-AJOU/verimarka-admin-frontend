@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { Navigate, NavLink, Route, Routes, useLocation } from "react-router-dom";
+import { NavLink, Route, Routes, useLocation } from "react-router-dom";
 import { getAdminDisplayName } from "../../lib/format";
 import type { AdminUser } from "../../types/admin";
 import DashboardPage from "../../pages/DashboardPage";
@@ -9,6 +9,7 @@ import UsersPage from "../../pages/UsersPage";
 import UserDetailPage from "../../pages/UserDetailPage";
 import VotesPage from "../../pages/VotesPage";
 import VoteDetailPage from "../../pages/VoteDetailPage";
+import ErrorPage from "../../pages/ErrorPage";
 
 type AdminLayoutProps = {
   user: AdminUser;
@@ -64,7 +65,7 @@ export default function AdminLayout({ user, onLogout }: AdminLayoutProps) {
           <Route path="/images/:imageId" element={<ImageDetailPage />} />
           <Route path="/votes" element={<VotesPage />} />
           <Route path="/votes/:voteId" element={<VoteDetailPage />} />
-          <Route path="*" element={<Navigate to="/" replace />} />
+          <Route path="*" element={<ErrorPage statusCode={404} />} />
         </Routes>
       </main>
     </div>
