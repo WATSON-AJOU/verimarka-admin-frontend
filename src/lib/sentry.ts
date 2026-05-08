@@ -5,7 +5,6 @@ declare global {
     Sentry?: {
       init: (options: Record<string, unknown>) => void;
       setTag?: (key: string, value: string) => void;
-      captureException?: (error: unknown, context?: Record<string, unknown>) => void;
       captureMessage?: (message: string, context?: Record<string, unknown>) => void;
     };
   }
@@ -78,9 +77,4 @@ export async function initSentry() {
 export function captureSentryMessage(message: string, context?: Record<string, unknown>) {
   if (!window.Sentry?.captureMessage) return;
   window.Sentry.captureMessage(message, context);
-}
-
-export function captureSentryException(error: unknown, context?: Record<string, unknown>) {
-  if (!window.Sentry?.captureException) return;
-  window.Sentry.captureException(error, context);
 }
