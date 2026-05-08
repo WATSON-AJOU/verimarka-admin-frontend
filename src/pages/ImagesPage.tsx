@@ -3,31 +3,42 @@ import { NavLink } from "react-router-dom";
 import { PaginationControls, ErrorBlock, GradientThumb, LoadingBlock, SectionLayout } from "../components/common/AdminShared";
 import { StatusPill } from "../components/common/StatusPill";
 import { useAdminResource } from "../hooks/useAdminResource";
-import { usePagedList } from "../hooks/usePagedList";
-import type { AdminImageListItem } from "../types/admin";
+import { LIST_PAGE_SIZE, type AdminImageListItem, type PaginatedResponse } from "../types/admin";
 
 export default function ImagesPage() {
-  const { data, loading, error } = useAdminResource<AdminImageListItem[]>("/api/accounts/admin/images/");
   const [query, setQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("모든 상태");
   const [sortBy, setSortBy] = useState("최신순");
+  const [page, setPage] = useState(1);
 
-  const filteredImages = useMemo(() => {
-    const source = data ?? [];
-    const next = source.filter((image) => {
-      const q = query.trim().toLowerCase();
-      const matchesQuery = q === "" || image.file_name.toLowerCase().includes(q) || image.uploader_email.toLowerCase().includes(q);
-      const matchesStatus = statusFilter === "모든 상태" || image.decision === statusFilter || image.vote_status === statusFilter;
-      return matchesQuery && matchesStatus;
+  const resourcePath = useMemo(() => {
+    const params = new URLSearchParams({
+      page: String(page),
+      page_size: String(LIST_PAGE_SIZE),
+      q: query,
+      status: statusFilter,
+      sort: sortBy,
     });
+    return `/api/accounts/admin/images/?${params.toString()}`;
+  }, [page, query, sortBy, statusFilter]);
+  const { data, loading, error } = useAdminResource<PaginatedResponse<AdminImageListItem>>(resourcePath);
+  const images = data?.results ?? [];
+  const totalPages = data?.total_pages ?? 1;
 
-    return [...next].sort((a, b) => {
-      if (sortBy === "오래된순") return a.uploaded_at.localeCompare(b.uploaded_at);
-      return b.uploaded_at.localeCompare(a.uploaded_at);
-    });
-  }, [data, query, statusFilter, sortBy]);
+  function handleQueryChange(value: string) {
+    setQuery(value);
+    setPage(1);
+  }
 
-  const { page, setPage, totalPages, pagedItems } = usePagedList(filteredImages, 15, [query, sortBy, statusFilter]);
+  function handleStatusChange(value: string) {
+    setStatusFilter(value);
+    setPage(1);
+  }
+
+  function handleSortChange(value: string) {
+    setSortBy(value);
+    setPage(1);
+  }
 
   return (
     <SectionLayout title="이미지 관리">
@@ -37,11 +48,11 @@ export default function ImagesPage() {
         </div>
         <div className="filter-stack">
           <div className="search-row">
-            <input value={query} onChange={(event) => setQuery(event.target.value)} className="search-input" placeholder="파일명, 업로더 검색..." />
+            <input value={query} onChange={(event) => handleQueryChange(event.target.value)} className="search-input" placeholder="파일명, 업로더 검색..." />
             <button className="action-button">검색</button>
           </div>
           <div className="filter-row">
-            <select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)} className="filter-select">
+            <select value={statusFilter} onChange={(event) => handleStatusChange(event.target.value)} className="filter-select">
               <option>모든 상태</option>
               <option>ALLOW</option>
               <option>REVIEW</option>
@@ -49,7 +60,7 @@ export default function ImagesPage() {
               <option>진행중</option>
               <option>종료</option>
             </select>
-            <select value={sortBy} onChange={(event) => setSortBy(event.target.value)} className="filter-select">
+            <select value={sortBy} onChange={(event) => handleSortChange(event.target.value)} className="filter-select">
               <option>최신순</option>
               <option>오래된순</option>
             </select>
@@ -73,7 +84,7 @@ export default function ImagesPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {pagedItems.map((image) => (
+                  {images.map((image) => (
                     <tr key={image.public_id}>
                       <td><GradientThumb src={image.preview_url} size="small" /></td>
                       <td>{image.file_name}</td>
@@ -88,9 +99,9 @@ export default function ImagesPage() {
               </table>
             </div>
             <PaginationControls
-              page={page}
+              page={data?.page ?? page}
               totalPages={totalPages}
-              totalCount={filteredImages.length}
+              totalCount={data?.total_count ?? 0}
               onPrev={() => setPage((current) => Math.max(1, current - 1))}
               onNext={() => setPage((current) => Math.min(totalPages, current + 1))}
             />

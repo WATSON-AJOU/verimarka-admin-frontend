@@ -15,6 +15,14 @@ export type AuthTokens = {
 
 export const LIST_PAGE_SIZE = 15;
 
+export type PaginatedResponse<T> = {
+  results: T[];
+  page: number;
+  page_size: number;
+  total_count: number;
+  total_pages: number;
+};
+
 export type DashboardData = {
   total_users: number;
   verified_users: number;

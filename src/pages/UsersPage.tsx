@@ -2,12 +2,35 @@ import { PaginationControls, ErrorBlock, LoadingBlock, SectionLayout } from "../
 import { UsersFilterBar } from "../components/users/UsersFilterBar";
 import { UsersTable } from "../components/users/UsersTable";
 import { useAdminResource } from "../hooks/useAdminResource";
-import { useUsersList } from "../hooks/useUsersList";
-import type { AdminUserListItem } from "../types/admin";
+import { LIST_PAGE_SIZE, type AdminUserListItem, type PaginatedResponse } from "../types/admin";
+import { useMemo, useState } from "react";
 
 export default function UsersPage() {
-  const { data, loading, error } = useAdminResource<AdminUserListItem[]>("/api/accounts/admin/users/");
-  const { query, setQuery, filter, setFilter, filteredUsers, page, setPage, totalPages, pagedItems } = useUsersList(data);
+  const [query, setQuery] = useState("");
+  const [filter, setFilter] = useState("전체 회원");
+  const [page, setPage] = useState(1);
+  const resourcePath = useMemo(() => {
+    const params = new URLSearchParams({
+      page: String(page),
+      page_size: String(LIST_PAGE_SIZE),
+      q: query,
+      filter,
+    });
+    return `/api/accounts/admin/users/?${params.toString()}`;
+  }, [filter, page, query]);
+  const { data, loading, error } = useAdminResource<PaginatedResponse<AdminUserListItem>>(resourcePath);
+  const users = data?.results ?? [];
+  const totalPages = data?.total_pages ?? 1;
+
+  function handleQueryChange(value: string) {
+    setQuery(value);
+    setPage(1);
+  }
+
+  function handleFilterChange(value: string) {
+    setFilter(value);
+    setPage(1);
+  }
 
   return (
     <SectionLayout title="유저 관리">
@@ -15,17 +38,17 @@ export default function UsersPage() {
         <div className="page-head">
           <h1>유저 관리</h1>
         </div>
-        <UsersFilterBar query={query} filter={filter} onQueryChange={setQuery} onFilterChange={setFilter} />
+        <UsersFilterBar query={query} filter={filter} onQueryChange={handleQueryChange} onFilterChange={handleFilterChange} />
 
         {loading ? <LoadingBlock /> : null}
         {error ? <ErrorBlock message={error} /> : null}
         {!loading && !error ? (
           <>
-            <UsersTable users={pagedItems} />
+            <UsersTable users={users} />
             <PaginationControls
-              page={page}
+              page={data?.page ?? page}
               totalPages={totalPages}
-              totalCount={filteredUsers.length}
+              totalCount={data?.total_count ?? 0}
               onPrev={() => setPage((current) => Math.max(1, current - 1))}
               onNext={() => setPage((current) => Math.min(totalPages, current + 1))}
             />
