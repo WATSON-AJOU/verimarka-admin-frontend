@@ -7,6 +7,8 @@ const REFRESH_TOKEN_KEY = "verimarka_admin_refresh";
 export const ADMIN_GOOGLE_OAUTH_CODE_KEY = "verimarka:admin:oauth:google:last-code";
 export const ADMIN_KAKAO_OAUTH_CODE_KEY = "verimarka:admin:oauth:kakao:last-code";
 export const ADMIN_APPLE_OAUTH_CODE_KEY = "verimarka:admin:oauth:apple:last-code";
+export const ADMIN_GOOGLE_OAUTH_STATE_KEY = "verimarka:admin:oauth:google:state";
+export const ADMIN_KAKAO_OAUTH_STATE_KEY = "verimarka:admin:oauth:kakao:state";
 export const ADMIN_APPLE_OAUTH_STATE_KEY = "verimarka:admin:oauth:apple:state";
 
 export function getStoredTokens(): AuthTokens | null {
@@ -24,6 +26,15 @@ export function storeTokens(tokens: AuthTokens) {
 export function clearTokens() {
   window.localStorage.removeItem(ACCESS_TOKEN_KEY);
   window.localStorage.removeItem(REFRESH_TOKEN_KEY);
+}
+
+export async function revokeAdminRefreshToken(refresh: string | null) {
+  if (!refresh) return;
+  await fetch("/api/accounts/logout/", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "X-Request-Id": createClientRequestId() },
+    body: JSON.stringify({ refresh }),
+  }).catch(() => undefined);
 }
 
 export async function refreshAdminAccessToken(refresh: string) {
@@ -66,13 +77,16 @@ export function getGoogleLoginUrl() {
   const redirectUri =
     import.meta.env.VITE_GOOGLE_REDIRECT_URI ||
     `${window.location.origin}/auth/google/callback`;
+  const state = crypto.randomUUID();
+  window.sessionStorage.setItem(ADMIN_GOOGLE_OAUTH_STATE_KEY, state);
   return (
     "https://accounts.google.com/o/oauth2/v2/auth" +
     "?response_type=code" +
     `&client_id=${encodeURIComponent(clientId)}` +
     `&redirect_uri=${encodeURIComponent(redirectUri)}` +
     "&scope=openid%20email%20profile" +
-    "&access_type=offline"
+    "&access_type=offline" +
+    `&state=${encodeURIComponent(state)}`
   );
 }
 
@@ -81,11 +95,14 @@ export function getKakaoLoginUrl() {
   const redirectUri =
     import.meta.env.VITE_KAKAO_REDIRECT_URI ||
     `${window.location.origin}/auth/kakao/callback`;
+  const state = crypto.randomUUID();
+  window.sessionStorage.setItem(ADMIN_KAKAO_OAUTH_STATE_KEY, state);
   return (
     "https://kauth.kakao.com/oauth/authorize" +
     "?response_type=code" +
     `&client_id=${encodeURIComponent(clientId)}` +
-    `&redirect_uri=${encodeURIComponent(redirectUri)}`
+    `&redirect_uri=${encodeURIComponent(redirectUri)}` +
+    `&state=${encodeURIComponent(state)}`
   );
 }
 

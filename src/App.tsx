@@ -4,7 +4,7 @@ import "./styles.css";
 import LoginPage from "./components/auth/LoginPage";
 import OAuthCallbackPage from "./components/auth/OAuthCallbackPage";
 import AdminLayout from "./components/layout/AdminLayout";
-import { clearTokens, getAppleLoginUrl, getGoogleLoginUrl, getKakaoLoginUrl, getStoredTokens, storeTokens } from "./lib/auth";
+import { clearTokens, getAppleLoginUrl, getGoogleLoginUrl, getKakaoLoginUrl, getStoredTokens, revokeAdminRefreshToken, storeTokens } from "./lib/auth";
 import { adminJsonRequest, fetchAdminJson } from "./lib/api";
 import type { AdminUser, AuthTokens } from "./types/admin";
 
@@ -109,10 +109,13 @@ export default function App() {
   }
 
   function handleLogout() {
-    clearTokens();
-    setAdminUser(null);
-    setLoginPassword("");
-    navigate("/login", { replace: true });
+    const stored = getStoredTokens();
+    void revokeAdminRefreshToken(stored?.refresh ?? null).finally(() => {
+      clearTokens();
+      setAdminUser(null);
+      setLoginPassword("");
+      navigate("/login", { replace: true });
+    });
   }
 
   if (!authReady || authLoading) {
@@ -159,15 +162,15 @@ export default function App() {
       />
       <Route
         path="/auth/apple/callback"
-        element={<OAuthCallbackPage provider="Apple" endpoint="/api/accounts/auth/oauth/apple/" onAuthenticated={handleAdminAuthenticated} />}
+        element={<OAuthCallbackPage provider="Apple" endpoint="/api/accounts/admin/auth/oauth/apple/" onAuthenticated={handleAdminAuthenticated} />}
       />
       <Route
         path="/auth/google/callback"
-        element={<OAuthCallbackPage provider="Google" endpoint="/api/accounts/auth/oauth/google/" onAuthenticated={handleAdminAuthenticated} />}
+        element={<OAuthCallbackPage provider="Google" endpoint="/api/accounts/admin/auth/oauth/google/" onAuthenticated={handleAdminAuthenticated} />}
       />
       <Route
         path="/auth/kakao/callback"
-        element={<OAuthCallbackPage provider="Kakao" endpoint="/api/accounts/auth/oauth/kakao/" onAuthenticated={handleAdminAuthenticated} />}
+        element={<OAuthCallbackPage provider="Kakao" endpoint="/api/accounts/admin/auth/oauth/kakao/" onAuthenticated={handleAdminAuthenticated} />}
       />
       <Route path="/*" element={adminUser ? <AdminLayout user={adminUser} onLogout={handleLogout} /> : <Navigate to="/login" replace />} />
     </Routes>

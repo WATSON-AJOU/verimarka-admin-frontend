@@ -4,7 +4,9 @@ import {
   ADMIN_APPLE_OAUTH_CODE_KEY,
   ADMIN_APPLE_OAUTH_STATE_KEY,
   ADMIN_GOOGLE_OAUTH_CODE_KEY,
+  ADMIN_GOOGLE_OAUTH_STATE_KEY,
   ADMIN_KAKAO_OAUTH_CODE_KEY,
+  ADMIN_KAKAO_OAUTH_STATE_KEY,
   clearTokens,
   storeTokens,
 } from "../../lib/auth";
@@ -38,14 +40,18 @@ export default function OAuthCallbackPage({ provider, endpoint, onAuthenticated 
             : provider === "Kakao"
               ? ADMIN_KAKAO_OAUTH_CODE_KEY
               : ADMIN_APPLE_OAUTH_CODE_KEY;
-        if (provider === "Apple") {
-          const state = params.get("state");
-          const expectedState = window.sessionStorage.getItem(ADMIN_APPLE_OAUTH_STATE_KEY);
-          if (!state || !expectedState || state !== expectedState) {
-            throw new Error("Apple 로그인 state 검증에 실패했습니다.");
-          }
-          window.sessionStorage.removeItem(ADMIN_APPLE_OAUTH_STATE_KEY);
+        const oauthStateStorageKey =
+          provider === "Google"
+            ? ADMIN_GOOGLE_OAUTH_STATE_KEY
+            : provider === "Kakao"
+              ? ADMIN_KAKAO_OAUTH_STATE_KEY
+              : ADMIN_APPLE_OAUTH_STATE_KEY;
+        const state = params.get("state");
+        const expectedState = window.sessionStorage.getItem(oauthStateStorageKey);
+        if (!state || !expectedState || state !== expectedState) {
+          throw new Error(`${provider} 로그인 state 검증에 실패했습니다.`);
         }
+        window.sessionStorage.removeItem(oauthStateStorageKey);
         const lastHandledCode = window.sessionStorage.getItem(oauthCodeStorageKey);
         if (lastHandledCode === code) {
           return;
@@ -70,11 +76,11 @@ export default function OAuthCallbackPage({ provider, endpoint, onAuthenticated 
           access: String(payload.access),
           refresh: String(payload.refresh),
         };
-        storeTokens(tokens);
         const oauthUser = payload.user;
         if (!oauthUser || (!oauthUser.is_staff && !oauthUser.is_superuser)) {
           throw new Error("관리자 로그인이 필요합니다.");
         }
+        storeTokens(tokens);
         if (!cancelled) {
           onAuthenticated(oauthUser, tokens);
           window.location.replace("/");
