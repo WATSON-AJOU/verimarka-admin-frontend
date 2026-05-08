@@ -66,7 +66,7 @@ export default function OAuthCallbackPage({ provider, endpoint, onAuthenticated 
                 ? import.meta.env.VITE_APPLE_REDIRECT_URI
                 : `${window.location.origin}/auth/${provider.toLowerCase()}/callback`;
 
-        const payload = await adminJsonRequest<{ access: string; refresh: string; user?: AdminUser }>(endpoint, {
+        const payload = await adminJsonRequest<{ access: string; user?: AdminUser }>(endpoint, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ code, redirect_uri }),
@@ -74,7 +74,6 @@ export default function OAuthCallbackPage({ provider, endpoint, onAuthenticated 
 
         const tokens = {
           access: String(payload.access),
-          refresh: String(payload.refresh),
         };
         const oauthUser = payload.user;
         if (!oauthUser || (!oauthUser.is_staff && !oauthUser.is_superuser)) {

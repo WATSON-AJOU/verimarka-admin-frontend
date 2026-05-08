@@ -4,7 +4,16 @@ import "./styles.css";
 import LoginPage from "./components/auth/LoginPage";
 import OAuthCallbackPage from "./components/auth/OAuthCallbackPage";
 import AdminLayout from "./components/layout/AdminLayout";
-import { clearTokens, getAppleLoginUrl, getGoogleLoginUrl, getKakaoLoginUrl, getStoredTokens, revokeAdminRefreshToken, storeTokens } from "./lib/auth";
+import {
+  clearTokens,
+  getAppleLoginUrl,
+  getGoogleLoginUrl,
+  getKakaoLoginUrl,
+  getStoredTokens,
+  refreshAdminAccessToken,
+  revokeAdminRefreshToken,
+  storeTokens,
+} from "./lib/auth";
 import { adminJsonRequest, fetchAdminJson } from "./lib/api";
 import type { AdminUser, AuthTokens } from "./types/admin";
 
@@ -31,14 +40,12 @@ export default function App() {
     let cancelled = false;
 
     const bootstrap = async () => {
-      const stored = getStoredTokens();
-      if (!stored) {
-        if (!cancelled) setAuthReady(true);
-        return;
-      }
-
       setAuthLoading(true);
       try {
+        let stored = getStoredTokens();
+        if (!stored) {
+          stored = await refreshAdminAccessToken();
+        }
         const payload = await fetchAdminJson<AdminUser>("/api/accounts/admin/me/");
         if (!cancelled) setAdminUser(payload);
       } catch (error) {
@@ -85,7 +92,7 @@ export default function App() {
     setLoginSubmitting(true);
 
     try {
-      const payload = await adminJsonRequest<{ access: string; refresh: string; user: AdminUser }>("/api/accounts/admin/login/", {
+      const payload = await adminJsonRequest<{ access: string; user: AdminUser }>("/api/accounts/admin/login/", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -96,7 +103,6 @@ export default function App() {
 
       storeTokens({
         access: String(payload.access),
-        refresh: String(payload.refresh),
       });
       setAdminUser(payload.user);
       setLoginPassword("");
@@ -109,8 +115,7 @@ export default function App() {
   }
 
   function handleLogout() {
-    const stored = getStoredTokens();
-    void revokeAdminRefreshToken(stored?.refresh ?? null).finally(() => {
+    void revokeAdminRefreshToken().finally(() => {
       clearTokens();
       setAdminUser(null);
       setLoginPassword("");

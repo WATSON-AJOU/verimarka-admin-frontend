@@ -12,32 +12,32 @@ export const ADMIN_KAKAO_OAUTH_STATE_KEY = "verimarka:admin:oauth:kakao:state";
 export const ADMIN_APPLE_OAUTH_STATE_KEY = "verimarka:admin:oauth:apple:state";
 
 export function getStoredTokens(): AuthTokens | null {
-  const access = window.localStorage.getItem(ACCESS_TOKEN_KEY);
-  const refresh = window.localStorage.getItem(REFRESH_TOKEN_KEY);
-  if (!access || !refresh) return null;
-  return { access, refresh };
+  const access = window.sessionStorage.getItem(ACCESS_TOKEN_KEY);
+  if (!access) return null;
+  return { access };
 }
 
 export function storeTokens(tokens: AuthTokens) {
-  window.localStorage.setItem(ACCESS_TOKEN_KEY, tokens.access);
-  window.localStorage.setItem(REFRESH_TOKEN_KEY, tokens.refresh);
-}
-
-export function clearTokens() {
+  window.sessionStorage.setItem(ACCESS_TOKEN_KEY, tokens.access);
   window.localStorage.removeItem(ACCESS_TOKEN_KEY);
   window.localStorage.removeItem(REFRESH_TOKEN_KEY);
 }
 
-export async function revokeAdminRefreshToken(refresh: string | null) {
-  if (!refresh) return;
+export function clearTokens() {
+  window.sessionStorage.removeItem(ACCESS_TOKEN_KEY);
+  window.localStorage.removeItem(ACCESS_TOKEN_KEY);
+  window.localStorage.removeItem(REFRESH_TOKEN_KEY);
+}
+
+export async function revokeAdminRefreshToken() {
   await fetch("/api/accounts/logout/", {
     method: "POST",
     headers: { "Content-Type": "application/json", "X-Request-Id": createClientRequestId() },
-    body: JSON.stringify({ refresh }),
+    credentials: "include",
   }).catch(() => undefined);
 }
 
-export async function refreshAdminAccessToken(refresh: string) {
+export async function refreshAdminAccessToken() {
   const requestId = createClientRequestId();
   appLogger.info("admin.auth.refresh.request", {
     request_id: requestId,
@@ -48,7 +48,7 @@ export async function refreshAdminAccessToken(refresh: string) {
   const response = await fetch("/api/auth/token/refresh/", {
     method: "POST",
     headers: { "Content-Type": "application/json", "X-Request-Id": requestId },
-    body: JSON.stringify({ refresh }),
+    credentials: "include",
   });
 
   const payload = await response.json().catch(() => ({}));
@@ -66,7 +66,6 @@ export async function refreshAdminAccessToken(refresh: string) {
 
   const nextTokens = {
     access: String(payload.access),
-    refresh: payload.refresh ? String(payload.refresh) : refresh,
   };
   storeTokens(nextTokens);
   return nextTokens;

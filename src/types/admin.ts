@@ -11,7 +11,6 @@ export type AdminUser = {
 
 export type AuthTokens = {
   access: string;
-  refresh: string;
 };
 
 export const LIST_PAGE_SIZE = 15;

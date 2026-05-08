@@ -38,6 +38,7 @@ export async function adminJsonRequest<T>(path: string, init?: RequestInit): Pro
   const response = await fetch(path, {
     ...init,
     headers,
+    credentials: init?.credentials ?? "include",
   });
   const payload = await response.json().catch(() => ({}));
   const responseRequestId = response.headers.get("X-Request-Id") || requestId;
@@ -102,6 +103,7 @@ export async function authenticatedAdminFetch(path: string, init?: RequestInit) 
         Authorization: `Bearer ${access}`,
         "X-Request-Id": requestId,
       },
+      credentials: init?.credentials ?? "include",
     });
 
   appLogger.info("admin.authenticated_fetch.request", {
@@ -121,7 +123,7 @@ export async function authenticatedAdminFetch(path: string, init?: RequestInit) 
   });
   if (response.status !== 401) return response;
 
-  const refreshed = await refreshAdminAccessToken(stored.refresh);
+  const refreshed = await refreshAdminAccessToken();
   response = await requestWithAccess(refreshed.access);
   appLogger.info("admin.authenticated_fetch.retry_response", {
     request_id: response.headers.get("X-Request-Id") || requestId,
