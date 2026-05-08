@@ -21,6 +21,20 @@ export class AdminApiError extends Error {
   }
 }
 
+function getNetworkErrorMessage() {
+  return "서버에 연결할 수 없습니다. 네트워크 상태를 확인한 뒤 다시 시도해주세요.";
+}
+
+function getPayloadMessage(payload: unknown, fallback: string) {
+  const value = payload as {
+    error_message?: string;
+    detail?: string;
+    message?: string;
+    non_field_errors?: string[];
+  };
+  return value.error_message || value.detail || value.message || value.non_field_errors?.[0] || fallback;
+}
+
 export async function adminJsonRequest<T>(path: string, init?: RequestInit): Promise<T> {
   const requestId = createClientRequestId();
   const headers = new Headers(init?.headers ?? {});
@@ -35,11 +49,23 @@ export async function adminJsonRequest<T>(path: string, init?: RequestInit): Pro
     method: init?.method || "GET",
   });
 
-  const response = await fetch(path, {
-    ...init,
-    headers,
-    credentials: init?.credentials ?? "include",
-  });
+  let response: Response;
+  try {
+    response = await fetch(path, {
+      ...init,
+      headers,
+      credentials: init?.credentials ?? "include",
+    });
+  } catch (error) {
+    const message = getNetworkErrorMessage();
+    appLogger.error("admin.api.network_error", {
+      request_id: requestId,
+      path,
+      method: init?.method || "GET",
+      error,
+    });
+    throw new AdminApiError(message, { status: 0, requestId, path });
+  }
   const payload = await response.json().catch(() => ({}));
   const responseRequestId = response.headers.get("X-Request-Id") || requestId;
   const responseId = response.headers.get("X-Response-Id");
@@ -54,11 +80,10 @@ export async function adminJsonRequest<T>(path: string, init?: RequestInit): Pro
   });
 
   if (!response.ok) {
-    const message =
-      (payload as { detail?: string; message?: string; non_field_errors?: string[] }).detail ||
-      (payload as { detail?: string; message?: string; non_field_errors?: string[] }).message ||
-      (payload as { non_field_errors?: string[] }).non_field_errors?.[0] ||
-      "관리자 요청 처리에 실패했습니다.";
+    const message = getPayloadMessage(
+      payload,
+      response.status >= 500 ? "서버 오류가 발생했습니다. 잠시 후 다시 시도해주세요." : "관리자 요청 처리에 실패했습니다.",
+    );
     const error = new AdminApiError(message, {
       status: response.status,
       requestId: responseRequestId,
@@ -95,16 +120,27 @@ export async function authenticatedAdminFetch(path: string, init?: RequestInit) 
   }
 
   const requestId = createClientRequestId();
-  const requestWithAccess = async (access: string) =>
-    fetch(path, {
-      ...init,
-      headers: {
-        ...(init?.headers || {}),
-        Authorization: `Bearer ${access}`,
-        "X-Request-Id": requestId,
-      },
-      credentials: init?.credentials ?? "include",
-    });
+  const requestWithAccess = async (access: string) => {
+    try {
+      return await fetch(path, {
+        ...init,
+        headers: {
+          ...(init?.headers || {}),
+          Authorization: `Bearer ${access}`,
+          "X-Request-Id": requestId,
+        },
+        credentials: init?.credentials ?? "include",
+      });
+    } catch (error) {
+      appLogger.error("admin.authenticated_fetch.network_error", {
+        request_id: requestId,
+        path,
+        method: init?.method || "GET",
+        error,
+      });
+      throw new Error(getNetworkErrorMessage());
+    }
+  };
 
   appLogger.info("admin.authenticated_fetch.request", {
     request_id: requestId,
@@ -140,11 +176,7 @@ export async function fetchAdminJson<T>(path: string): Promise<T> {
   const response = await authenticatedAdminFetch(path);
   const payload = await response.json().catch(() => ({}));
   if (!response.ok) {
-    throw new Error(
-      (payload as { detail?: string; message?: string }).detail ||
-        (payload as { detail?: string; message?: string }).message ||
-        "관리자 데이터를 불러오지 못했습니다.",
-    );
+    throw new Error(getPayloadMessage(payload, "관리자 데이터를 불러오지 못했습니다."));
   }
   return payload as T;
 }
@@ -159,12 +191,7 @@ export async function mutateAdminJson<T>(path: string, init: RequestInit): Promi
   });
   const payload = await response.json().catch(() => ({}));
   if (!response.ok) {
-    throw new Error(
-      (payload as { detail?: string; message?: string; non_field_errors?: string[] }).detail ||
-        (payload as { detail?: string; message?: string; non_field_errors?: string[] }).message ||
-        (payload as { non_field_errors?: string[] }).non_field_errors?.[0] ||
-        "관리자 저장에 실패했습니다.",
-    );
+    throw new Error(getPayloadMessage(payload, "관리자 저장에 실패했습니다."));
   }
   return payload as T;
 }

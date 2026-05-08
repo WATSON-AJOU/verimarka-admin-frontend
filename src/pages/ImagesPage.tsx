@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { NavLink } from "react-router-dom";
-import { PaginationControls, ContentThumb, ErrorBlock, LoadingBlock, SectionLayout } from "../components/common/AdminShared";
+import { PaginationControls, ContentThumb, EmptyTableRow, ErrorBlock, LoadingBlock, SectionLayout } from "../components/common/AdminShared";
 import { StatusPill } from "../components/common/StatusPill";
 import { useAdminResource } from "../hooks/useAdminResource";
 import { LIST_PAGE_SIZE, type AdminImageListItem, type PaginatedResponse } from "../types/admin";
@@ -84,17 +84,21 @@ export default function ImagesPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {images.map((image) => (
-                    <tr key={image.public_id}>
-                      <td><ContentThumb src={image.preview_url} contentType={image.content_type} size="small" /></td>
-                      <td>{image.file_name}</td>
-                      <td>{image.uploader_email}</td>
-                      <td>{image.uploaded_at}</td>
-                      <td><StatusPill value={image.decision} /></td>
-                      <td><StatusPill value={image.vote_status} /></td>
-                      <td><NavLink className="table-link" to={`/images/${image.public_id}`}>보기</NavLink></td>
-                    </tr>
-                  ))}
+                  {images.length === 0 ? (
+                    <EmptyTableRow colSpan={7} message="조건에 맞는 저작물이 없습니다." />
+                  ) : (
+                    images.map((image) => (
+                      <tr key={image.public_id}>
+                        <td><ContentThumb src={image.preview_url} contentType={image.content_type} size="small" /></td>
+                        <td>{image.file_name}</td>
+                        <td>{image.uploader_email}</td>
+                        <td>{image.uploaded_at}</td>
+                        <td><StatusPill value={image.decision} /></td>
+                        <td><StatusPill value={image.vote_status} /></td>
+                        <td><NavLink className="table-link" to={`/images/${image.public_id}`}>보기</NavLink></td>
+                      </tr>
+                    ))
+                  )}
                 </tbody>
               </table>
             </div>

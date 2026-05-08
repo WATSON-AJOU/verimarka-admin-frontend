@@ -77,6 +77,16 @@ export function ErrorBlock({ message }: { message: string }) {
   );
 }
 
+export function EmptyTableRow({ colSpan, message }: { colSpan: number; message: string }) {
+  return (
+    <tr>
+      <td colSpan={colSpan} className="empty-row">
+        {message}
+      </td>
+    </tr>
+  );
+}
+
 export function SectionLayout({ title, children }: { title: string; children: ReactNode }) {
   return (
     <section className="section-layout">

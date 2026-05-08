@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { NavLink } from "react-router-dom";
-import { PaginationControls, ContentThumb, ErrorBlock, LoadingBlock, SectionLayout } from "../components/common/AdminShared";
+import { PaginationControls, ContentThumb, EmptyTableRow, ErrorBlock, LoadingBlock, SectionLayout } from "../components/common/AdminShared";
 import { StatusPill } from "../components/common/StatusPill";
 import { useAdminResource } from "../hooks/useAdminResource";
 import { formatNumber } from "../lib/format";
@@ -88,28 +88,32 @@ export default function VotesPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {votes.map((vote) => (
-                    <tr key={vote.public_id}>
-                      <td className="strong-cell">{vote.vote_id}</td>
-                      <td>
-                        <div className="image-cell">
-                          <ContentThumb src={vote.preview_url} contentType={vote.content_type} size="small" />
-                          <div>
-                            <strong>{vote.file_name}</strong>
-                            <span>{vote.uploader_email}</span>
+                  {votes.length === 0 ? (
+                    <EmptyTableRow colSpan={10} message="조건에 맞는 투표가 없습니다." />
+                  ) : (
+                    votes.map((vote) => (
+                      <tr key={vote.public_id}>
+                        <td className="strong-cell">{vote.vote_id}</td>
+                        <td>
+                          <div className="image-cell">
+                            <ContentThumb src={vote.preview_url} contentType={vote.content_type} size="small" />
+                            <div>
+                              <strong>{vote.file_name}</strong>
+                              <span>{vote.uploader_email}</span>
+                            </div>
                           </div>
-                        </div>
-                      </td>
-                      <td><StatusPill value={vote.status} /></td>
-                      <td>{vote.start_date}</td>
-                      <td>{vote.end_date}</td>
-                      <td>{vote.yes_rate}%</td>
-                      <td>{vote.no_rate}%</td>
-                      <td>{formatNumber(vote.participant_count)}명</td>
-                      <td><StatusPill value={vote.decision} /></td>
-                      <td><NavLink className="table-link" to={`/votes/${vote.public_id}`}>보기</NavLink></td>
-                    </tr>
-                  ))}
+                        </td>
+                        <td><StatusPill value={vote.status} /></td>
+                        <td>{vote.start_date}</td>
+                        <td>{vote.end_date}</td>
+                        <td>{vote.yes_rate}%</td>
+                        <td>{vote.no_rate}%</td>
+                        <td>{formatNumber(vote.participant_count)}명</td>
+                        <td><StatusPill value={vote.decision} /></td>
+                        <td><NavLink className="table-link" to={`/votes/${vote.public_id}`}>보기</NavLink></td>
+                      </tr>
+                    ))
+                  )}
                 </tbody>
               </table>
             </div>
