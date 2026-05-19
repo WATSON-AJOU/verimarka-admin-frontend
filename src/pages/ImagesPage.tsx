@@ -21,7 +21,7 @@ export default function ImagesPage() {
     });
     return `/api/accounts/admin/images/?${params.toString()}`;
   }, [page, query, sortBy, statusFilter]);
-  const { data, loading, error } = useAdminResource<PaginatedResponse<AdminImageListItem>>(resourcePath);
+  const { data, loading, error } = useAdminResource<PaginatedResponse<AdminImageListItem>>(resourcePath, { refreshMs: 3000 });
   const images = data?.results ?? [];
   const totalPages = data?.total_pages ?? 1;
 
@@ -79,13 +79,14 @@ export default function ImagesPage() {
                     <th>업로더</th>
                     <th>업로드일</th>
                     <th>상태</th>
+                    <th>진행률</th>
                     <th>투표 상태</th>
                     <th>액션</th>
                   </tr>
                 </thead>
                 <tbody>
                   {images.length === 0 ? (
-                    <EmptyTableRow colSpan={7} message="조건에 맞는 저작물이 없습니다." />
+                    <EmptyTableRow colSpan={8} message="조건에 맞는 저작물이 없습니다." />
                   ) : (
                     images.map((image) => (
                       <tr key={image.public_id}>
@@ -94,6 +95,22 @@ export default function ImagesPage() {
                         <td>{image.uploader_email}</td>
                         <td>{image.uploaded_at}</td>
                         <td><StatusPill value={image.decision} /></td>
+                        <td>
+                          {image.latest_job && ["queued", "running"].includes(image.latest_job.status) ? (
+                            <div className="job-progress-cell">
+                              <div className="job-progress-meta">
+                                <span>{image.latest_job.job_type}</span>
+                                <strong>{image.latest_job.progress}%</strong>
+                              </div>
+                              <div className="job-progress-track">
+                                <div className="job-progress-fill" style={{ width: `${image.latest_job.progress}%` }} />
+                              </div>
+                              <span className="job-progress-message">{image.latest_job.progress_message || image.latest_job.status}</span>
+                            </div>
+                          ) : (
+                            <span className="muted-text">-</span>
+                          )}
+                        </td>
                         <td><StatusPill value={image.vote_status} /></td>
                         <td><NavLink className="table-link" to={`/images/${image.public_id}`}>보기</NavLink></td>
                       </tr>

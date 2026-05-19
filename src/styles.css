@@ -1061,6 +1061,56 @@ select {
   margin-top: 12px;
 }
 
+.job-progress-cell {
+  display: grid;
+  gap: 6px;
+  min-width: 160px;
+}
+
+.job-progress-cell.is-detail {
+  max-width: 640px;
+}
+
+.job-progress-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 12px;
+  color: #65748b;
+}
+
+.job-progress-meta strong {
+  color: #172033;
+}
+
+.job-progress-track {
+  height: 8px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #e7edf6;
+}
+
+.job-progress-fill {
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #1f7aec, #2fb58f);
+  transition: width 240ms ease;
+}
+
+.job-progress-message {
+  overflow: hidden;
+  max-width: 260px;
+  color: #65748b;
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.muted-text {
+  color: #94a3b8;
+}
+
 @media (max-width: 1100px) {
   .login-modal-card {
     width: min(620px, 100%);

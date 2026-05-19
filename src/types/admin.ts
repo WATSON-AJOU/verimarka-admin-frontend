@@ -89,6 +89,7 @@ export type AdminImageListItem = {
   decision: string;
   vote_status: string;
   preview_url: string | null;
+  latest_job?: AdminJobSummary | null;
 };
 
 export type AdminImageDetail = {
@@ -121,6 +122,16 @@ export type AdminImageDetail = {
     minted_at?: string;
     decision?: string;
   };
+  latest_job?: AdminJobSummary | null;
+};
+
+export type AdminJobSummary = {
+  job_id: string;
+  job_type: "register" | "verify" | "watermark";
+  status: "queued" | "running" | "success" | "failure";
+  progress: number;
+  progress_message?: string;
+  updated_at: string;
 };
 
 export type AdminVoteListItem = {

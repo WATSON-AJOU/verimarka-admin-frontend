@@ -5,7 +5,7 @@ import { ErrorBlock, GradientThumb, LoadingBlock, SectionLayout } from "../compo
 import type { DashboardData } from "../types/admin";
 
 export default function DashboardPage() {
-  const { data, loading, error } = useAdminResource<DashboardData>("/api/accounts/admin/dashboard/");
+  const { data, loading, error } = useAdminResource<DashboardData>("/api/accounts/admin/dashboard/", { refreshMs: 5000 });
 
   return (
     <SectionLayout title="운영 현황">

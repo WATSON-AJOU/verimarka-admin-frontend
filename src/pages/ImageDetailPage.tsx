@@ -10,6 +10,7 @@ export default function ImageDetailPage() {
   const safeImageId = normalizeUuidParam(imageId);
   const { data, loading, error } = useAdminResource<AdminImageDetail>(
     safeImageId ? `/api/accounts/admin/images/${safeImageId}/` : null,
+    { refreshMs: 3000 },
   );
 
   return (
@@ -30,6 +31,22 @@ export default function ImageDetailPage() {
           </div>
 
           <div className="detail-grid wide">
+            {data.latest_job && ["queued", "running"].includes(data.latest_job.status) ? (
+              <article className="detail-card full-span">
+                <h2>실시간 처리 진행률</h2>
+                <div className="job-progress-cell is-detail">
+                  <div className="job-progress-meta">
+                    <span>{data.latest_job.job_type}</span>
+                    <strong>{data.latest_job.progress}%</strong>
+                  </div>
+                  <div className="job-progress-track">
+                    <div className="job-progress-fill" style={{ width: `${data.latest_job.progress}%` }} />
+                  </div>
+                  <span className="job-progress-message">{data.latest_job.progress_message || data.latest_job.status}</span>
+                </div>
+              </article>
+            ) : null}
+
             <article className="detail-card">
               <h2>저작물 정보</h2>
               <div className="image-compare-grid">
