@@ -170,3 +170,114 @@ export type AdminVoteDetail = AdminVoteListItem & {
   threshold_result?: number | null;
   voter_records: VoteParticipant[];
 };
+
+export type AdminActionLog = {
+  id: number;
+  actor_email: string;
+  action: string;
+  target_type: string;
+  target_id: string;
+  reason: string;
+  before?: Record<string, unknown>;
+  after?: Record<string, unknown>;
+  request_id?: string;
+  ip_address?: string | null;
+  created_at: string;
+};
+
+export type OperationSummary = {
+  open_reports: number;
+  pending_retention_requests: number;
+  failed_jobs: number;
+  running_jobs: number;
+  moderation_cases_today: number;
+  notifications_queued: number;
+  latest_actions: AdminActionLog[];
+  report_status_counts: Array<{ status: string; count: number }>;
+};
+
+export type ModerationCase = {
+  id: number;
+  content_public_id: string;
+  file_name: string;
+  actor_email: string;
+  action: string;
+  status: string;
+  reason: string;
+  previous_status: string;
+  previous_decision: string;
+  next_status: string;
+  next_decision: string;
+  created_at: string;
+};
+
+export type ReportCase = {
+  id: number;
+  reporter_email: string;
+  assignee_email: string;
+  content_public_id: string;
+  file_name: string;
+  report_type: string;
+  status: string;
+  title: string;
+  description: string;
+  evidence?: Record<string, unknown>;
+  resolution: string;
+  created_at: string;
+  updated_at: string;
+  resolved_at?: string | null;
+};
+
+export type PolicyVersion = {
+  id: number;
+  policy_type: string;
+  version: string;
+  title: string;
+  body: string;
+  is_active: boolean;
+  published_at?: string | null;
+  created_at?: string;
+  updated_at?: string;
+};
+
+export type RetentionRequest = {
+  id: number;
+  requester_email: string;
+  request_type: string;
+  status: string;
+  target_type: string;
+  target_id: string;
+  reason: string;
+  decision_note: string;
+  due_at: string | null;
+  completed_at: string | null;
+  created_at: string;
+};
+
+export type OperationNotification = {
+  id: number;
+  user: number;
+  user_email: string;
+  channel: string;
+  status: string;
+  title: string;
+  message: string;
+  related_type: string;
+  related_id: string;
+  created_at: string;
+};
+
+export type OperationJob = {
+  job_id: string;
+  owner_email: string;
+  content_public_id: string;
+  job_type: string;
+  status: string;
+  progress: number;
+  progress_message: string;
+  error_code: string;
+  error_message: string;
+  retryable: boolean;
+  created_at: string;
+  updated_at: string;
+};

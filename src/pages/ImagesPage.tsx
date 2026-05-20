@@ -8,6 +8,10 @@ import { LIST_PAGE_SIZE, type AdminImageListItem, type PaginatedResponse } from 
 export default function ImagesPage() {
   const [query, setQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("모든 상태");
+  const [contentType, setContentType] = useState("");
+  const [jobStatus, setJobStatus] = useState("");
+  const [uploadedFrom, setUploadedFrom] = useState("");
+  const [uploadedTo, setUploadedTo] = useState("");
   const [sortBy, setSortBy] = useState("최신순");
   const [page, setPage] = useState(1);
 
@@ -19,8 +23,12 @@ export default function ImagesPage() {
       status: statusFilter,
       sort: sortBy,
     });
+    if (contentType) params.set("content_type", contentType);
+    if (jobStatus) params.set("job_status", jobStatus);
+    if (uploadedFrom) params.set("uploaded_from", uploadedFrom);
+    if (uploadedTo) params.set("uploaded_to", uploadedTo);
     return `/api/accounts/admin/images/?${params.toString()}`;
-  }, [page, query, sortBy, statusFilter]);
+  }, [contentType, jobStatus, page, query, sortBy, statusFilter, uploadedFrom, uploadedTo]);
   const { data, loading, error } = useAdminResource<PaginatedResponse<AdminImageListItem>>(resourcePath, { refreshMs: 3000 });
   const images = data?.results ?? [];
   const totalPages = data?.total_pages ?? 1;
@@ -37,6 +45,17 @@ export default function ImagesPage() {
 
   function handleSortChange(value: string) {
     setSortBy(value);
+    setPage(1);
+  }
+
+  function resetFilters() {
+    setQuery("");
+    setStatusFilter("모든 상태");
+    setContentType("");
+    setJobStatus("");
+    setUploadedFrom("");
+    setUploadedTo("");
+    setSortBy("최신순");
     setPage(1);
   }
 
@@ -60,10 +79,25 @@ export default function ImagesPage() {
               <option>진행중</option>
               <option>종료</option>
             </select>
+            <select value={contentType} onChange={(event) => { setContentType(event.target.value); setPage(1); }} className="filter-select">
+              <option value="">전체 타입</option>
+              <option value="image">이미지</option>
+              <option value="document">문서</option>
+            </select>
+            <select value={jobStatus} onChange={(event) => { setJobStatus(event.target.value); setPage(1); }} className="filter-select">
+              <option value="">전체 Job</option>
+              <option value="queued">queued</option>
+              <option value="running">running</option>
+              <option value="success">success</option>
+              <option value="failure">failure</option>
+            </select>
+            <input type="date" value={uploadedFrom} onChange={(event) => { setUploadedFrom(event.target.value); setPage(1); }} className="filter-select" />
+            <input type="date" value={uploadedTo} onChange={(event) => { setUploadedTo(event.target.value); setPage(1); }} className="filter-select" />
             <select value={sortBy} onChange={(event) => handleSortChange(event.target.value)} className="filter-select">
               <option>최신순</option>
               <option>오래된순</option>
             </select>
+            <button type="button" className="ghost-button" onClick={resetFilters}>초기화</button>
           </div>
         </div>
         {loading ? <LoadingBlock /> : null}
