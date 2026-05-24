@@ -27,6 +27,18 @@ export function UserDetailControls({
   saveError,
   saveMessage,
 }: UserDetailControlsProps) {
+  function confirmRoleSave() {
+    if (roleValue === currentRole) return;
+    const approved = window.confirm(`권한을 "${currentRole}"에서 "${roleValue}"로 변경할까요? 관리자 권한 변경은 감사 로그에 남습니다.`);
+    if (approved) onSaveRole();
+  }
+
+  function confirmStatusSave() {
+    if (statusValue === currentStatus) return;
+    const approved = window.confirm(`계정 상태를 "${currentStatus}"에서 "${statusValue}"로 변경할까요? 정지 처리 시 사용자의 서비스 접근이 제한됩니다.`);
+    if (approved) onSaveStatus();
+  }
+
   return (
     <>
       <div className="control-grid">
@@ -37,7 +49,7 @@ export function UserDetailControls({
               <option value="일반회원">일반회원</option>
               <option value="관리자">관리자</option>
             </select>
-            <button className="action-button secondary" onClick={onSaveRole} disabled={savingRole || roleValue === currentRole}>
+            <button className="action-button secondary" onClick={confirmRoleSave} disabled={savingRole || roleValue === currentRole}>
               {savingRole ? "저장 중..." : "권한 저장"}
             </button>
           </div>
@@ -49,7 +61,7 @@ export function UserDetailControls({
               <option value="정상">정상</option>
               <option value="정지">정지</option>
             </select>
-            <button className="action-button secondary" onClick={onSaveStatus} disabled={savingStatus || statusValue === currentStatus}>
+            <button className="action-button secondary" onClick={confirmStatusSave} disabled={savingStatus || statusValue === currentStatus}>
               {savingStatus ? "저장 중..." : "상태 저장"}
             </button>
           </div>

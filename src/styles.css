@@ -552,6 +552,11 @@ select {
   cursor: default;
 }
 
+.ghost-button.danger {
+  color: #ad3946;
+  border-color: #f1bdc4;
+}
+
 .action-button {
   min-width: 58px;
   min-height: 40px;
@@ -566,9 +571,24 @@ select {
   background: #5b89b5;
 }
 
+.action-button.danger {
+  background: #c24c5a;
+}
+
 .text-link {
   color: #366bb0;
   font-weight: 800;
+}
+
+.text-button {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #285f9e;
+  font: inherit;
+  font-weight: 800;
+  text-align: left;
+  cursor: pointer;
 }
 
 .filter-stack,
@@ -643,6 +663,317 @@ select {
 .admin-table tbody tr:last-child td,
 .mini-table tbody tr:last-child td {
   border-bottom: 0;
+}
+
+.admin-table.compact th,
+.admin-table.compact td {
+  padding: 10px;
+  white-space: normal;
+  vertical-align: top;
+}
+
+.table-subtext {
+  display: block;
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.operation-toast {
+  padding: 12px 14px;
+  border: 1px solid #bad8f7;
+  border-radius: 12px;
+  background: #edf6ff;
+  color: #285c9d;
+  font-weight: 800;
+}
+
+.operation-toast.inline {
+  margin-bottom: 12px;
+}
+
+.operation-toast.is-error {
+  border-color: #efbdc5;
+  background: #fff0f2;
+  color: #a43a47;
+}
+
+.operation-metrics {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.operation-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 8px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: #f6f9ff;
+}
+
+.operation-tab {
+  min-height: 40px;
+  padding: 0 14px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  background: transparent;
+  color: #46648e;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.operation-tab.active {
+  border-color: #b9cce9;
+  background: #ffffff;
+  color: #285f9e;
+  box-shadow: 0 8px 18px rgba(105, 126, 168, 0.08);
+}
+
+.operation-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.operation-grid .admin-card,
+.operation-metrics .metric-card {
+  padding: 16px;
+}
+
+.operation-grid h2 {
+  margin: 0 0 12px;
+  font-size: 18px;
+}
+
+.metric-card {
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--surface);
+  text-align: left;
+}
+
+.metric-card span {
+  display: block;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.metric-card strong {
+  display: block;
+  margin-top: 6px;
+  color: var(--text);
+  font-size: 28px;
+  line-height: 1;
+}
+
+.metric-card.is-clickable {
+  cursor: pointer;
+}
+
+.metric-card.is-clickable:hover {
+  border-color: #93b4e3;
+  background: #f8fbff;
+}
+
+.operation-panel {
+  padding: 16px;
+}
+
+.panel-head {
+  margin-bottom: 14px;
+}
+
+.panel-head h2 {
+  margin: 0;
+  font-size: 20px;
+  line-height: 1.2;
+}
+
+.panel-head p {
+  margin: 6px 0 0;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.operation-toolbar {
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+
+.inline-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.inline-actions input,
+.operation-form input,
+.operation-form textarea {
+  min-height: 40px;
+  padding: 0 12px;
+  border: 1px solid var(--line-strong);
+  border-radius: 10px;
+  background: #ffffff;
+  color: var(--text);
+}
+
+.inline-actions input {
+  width: 170px;
+}
+
+.operation-form {
+  display: grid;
+  gap: 10px;
+}
+
+.operation-form.horizontal {
+  grid-template-columns: 180px minmax(0, 1fr) auto;
+  align-items: center;
+}
+
+.operation-form.retention-create {
+  grid-template-columns: 170px 150px minmax(0, 1fr) minmax(0, 1.2fr) auto;
+  margin-bottom: 12px;
+}
+
+.operation-form textarea {
+  min-height: 92px;
+  padding-top: 10px;
+  resize: vertical;
+}
+
+.operation-list {
+  display: grid;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.operation-list div {
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: #f8fbff;
+}
+
+.operation-list-button {
+  display: block;
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: #f8fbff;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.operation-list strong,
+.operation-list span,
+.operation-list-button strong,
+.operation-list-button span {
+  display: block;
+}
+
+.operation-list span,
+.operation-list-button span {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.empty-card {
+  color: var(--muted);
+  font-weight: 800;
+}
+
+.full-width {
+  width: 100%;
+  margin-top: 12px;
+}
+
+.operation-drawer {
+  position: fixed;
+  top: 0;
+  right: 0;
+  z-index: 40;
+  width: min(560px, 100vw);
+  height: 100vh;
+  overflow: auto;
+  padding: 18px;
+  border-left: 1px solid var(--line);
+  background: #ffffff;
+  box-shadow: -18px 0 40px rgba(45, 68, 105, 0.18);
+}
+
+.drawer-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.drawer-head h2 {
+  margin: 0;
+  font-size: 22px;
+  line-height: 1.25;
+}
+
+.json-block {
+  max-width: 100%;
+  overflow: auto;
+  margin: 0;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: #f7f9fc;
+  color: #243853;
+  font-size: 12px;
+  white-space: pre-wrap;
+}
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(19, 31, 50, 0.42);
+}
+
+.confirm-dialog {
+  width: min(440px, 100%);
+  padding: 20px;
+  border-radius: 16px;
+  background: #ffffff;
+  box-shadow: 0 24px 60px rgba(20, 36, 59, 0.28);
+}
+
+.confirm-dialog h2 {
+  margin: 0;
+  font-size: 22px;
+}
+
+.confirm-dialog p {
+  margin: 10px 0 0;
+  color: var(--muted);
+  font-weight: 700;
+  line-height: 1.5;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 18px;
 }
 
 .table-pagination {
@@ -1118,8 +1449,13 @@ select {
 
   .detail-grid,
   .control-grid,
-  .dashboard-grid {
+  .dashboard-grid,
+  .operation-grid {
     grid-template-columns: 1fr;
+  }
+
+  .operation-metrics {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
 
@@ -1185,5 +1521,10 @@ select {
   .page-head-actions {
     justify-content: flex-start;
     flex-wrap: wrap;
+  }
+
+  .operation-metrics,
+  .operation-form.horizontal {
+    grid-template-columns: 1fr;
   }
 }

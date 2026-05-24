@@ -1,6 +1,8 @@
 import { NavLink, useParams } from "react-router-dom";
+import { useState } from "react";
 import { ContentThumb, ErrorBlock, LoadingBlock, SectionLayout } from "../components/common/AdminShared";
 import { useAdminResource } from "../hooks/useAdminResource";
+import { mutateAdminJson } from "../lib/api";
 import { statusClass } from "../lib/format";
 import { normalizeUuidParam } from "../lib/routeParams";
 import type { AdminImageDetail } from "../types/admin";
@@ -8,10 +10,33 @@ import type { AdminImageDetail } from "../types/admin";
 export default function ImageDetailPage() {
   const { imageId } = useParams();
   const safeImageId = normalizeUuidParam(imageId);
+  const [moderationAction, setModerationAction] = useState("needs_review");
+  const [moderationReason, setModerationReason] = useState("");
+  const [moderationMessage, setModerationMessage] = useState("");
+  const [refreshKey, setRefreshKey] = useState(0);
   const { data, loading, error } = useAdminResource<AdminImageDetail>(
-    safeImageId ? `/api/accounts/admin/images/${safeImageId}/` : null,
+    safeImageId ? `/api/accounts/admin/images/${safeImageId}/?r=${refreshKey}` : null,
     { refreshMs: 3000 },
   );
+
+  async function submitModeration(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!safeImageId) return;
+    const approved = window.confirm(`저작물 판정을 "${moderationAction}"로 처리할까요? 입력한 사유가 감사 로그에 남습니다.`);
+    if (!approved) return;
+    setModerationMessage("");
+    await mutateAdminJson("/api/operations/admin/moderation-cases/", {
+      method: "POST",
+      body: JSON.stringify({
+        content_public_id: safeImageId,
+        action: moderationAction,
+        reason: moderationReason,
+      }),
+    });
+    setModerationReason("");
+    setModerationMessage("수동 심사 결과가 저장되었습니다.");
+    setRefreshKey((value) => value + 1);
+  }
 
   return (
     <SectionLayout title="저작물 상세">
@@ -106,6 +131,23 @@ export default function ImageDetailPage() {
                 <div><dt>발행일</dt><dd>{data.blockchain?.minted_at || "-"}</dd></div>
                 <div><dt>AI 판정</dt><dd>{data.blockchain?.decision || "-"}</dd></div>
               </dl>
+            </article>
+
+            <article className="detail-card full-span">
+              <h2>수동 심사</h2>
+              {moderationMessage ? <div className="operation-toast inline">{moderationMessage}</div> : null}
+              <form className="operation-form horizontal" onSubmit={(event) => void submitModeration(event)}>
+                <select value={moderationAction} onChange={(event) => setModerationAction(event.target.value)} className="filter-select">
+                  <option value="approve">승인</option>
+                  <option value="reject">반려</option>
+                  <option value="needs_review">투표/재검토</option>
+                  <option value="hide">숨김</option>
+                  <option value="restore">복구</option>
+                  <option value="reanalyze">재분석</option>
+                </select>
+                <input required value={moderationReason} onChange={(event) => setModerationReason(event.target.value)} placeholder="운영 처리 사유" />
+                <button type="submit" className="action-button">저장</button>
+              </form>
             </article>
           </div>
         </article>

@@ -9,6 +9,7 @@ import UsersPage from "../../pages/UsersPage";
 import UserDetailPage from "../../pages/UserDetailPage";
 import VotesPage from "../../pages/VotesPage";
 import VoteDetailPage from "../../pages/VoteDetailPage";
+import OperationsPage from "../../pages/OperationsPage";
 import ErrorPage from "../../pages/ErrorPage";
 
 type AdminLayoutProps = {
@@ -26,6 +27,7 @@ export default function AdminLayout({ user, onLogout }: AdminLayoutProps) {
     if (location.pathname.startsWith("/images")) return "이미지 관리";
     if (location.pathname.startsWith("/votes/")) return "투표 상세";
     if (location.pathname.startsWith("/votes")) return "투표 관리";
+    if (location.pathname.startsWith("/operations")) return "운영 백오피스";
     return "운영 현황";
   }, [location.pathname]);
 
@@ -44,6 +46,7 @@ export default function AdminLayout({ user, onLogout }: AdminLayoutProps) {
           <NavLink to="/users" className="side-link">유저</NavLink>
           <NavLink to="/images" className="side-link">이미지</NavLink>
           <NavLink to="/votes" className="side-link">투표</NavLink>
+          <NavLink to="/operations" className="side-link">운영</NavLink>
         </nav>
       </aside>
 
@@ -65,6 +68,7 @@ export default function AdminLayout({ user, onLogout }: AdminLayoutProps) {
           <Route path="/images/:imageId" element={<ImageDetailPage />} />
           <Route path="/votes" element={<VotesPage />} />
           <Route path="/votes/:voteId" element={<VoteDetailPage />} />
+          <Route path="/operations" element={<OperationsPage />} />
           <Route path="*" element={<ErrorPage statusCode={404} />} />
         </Routes>
       </main>
